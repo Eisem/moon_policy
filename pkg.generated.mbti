@@ -41,6 +41,7 @@ pub(all) enum AccessChangeKind {
 
 pub(all) enum AttributeValue {
   StringValue(String)
+  StringListValue(Array[String])
   BoolValue(Bool)
   IntValue(Int)
 } derive(Eq, @debug.Debug)
@@ -58,6 +59,7 @@ pub(all) enum Condition {
   Equals(path~ : String, value~ : AttributeValue)
   Same(left~ : String, right~ : String)
   OneOf(path~ : String, values~ : Array[AttributeValue])
+  Contains(path~ : String, value~ : String)
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])

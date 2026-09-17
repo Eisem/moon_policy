@@ -140,6 +140,13 @@ fn decode_attribute_value(
 ) -> AttributeValue raise PolicyParseError {
   match value {
     String(string) => StringValue(string)
+    Array(items) => {
+      let values : Array[String] = []
+      for item in items {
+        values.push(expect_string(item, field=field + "[]"))
+      }
+      StringListValue(values)
+    }
     True => BoolValue(true)
     False => BoolValue(false)
     Number(number, ..) => {
@@ -147,10 +154,17 @@ fn decode_attribute_value(
       if Double::from_int(integer) == number {
         IntValue(integer)
       } else {
-        raise ExpectedType(field~, expected="string, boolean, or integer")
+        raise ExpectedType(
+          field~,
+          expected="string, string array, boolean, or integer",
+        )
       }
     }
-    _ => raise ExpectedType(field~, expected="string, boolean, or integer")
+    _ =>
+      raise ExpectedType(
+        field~,
+        expected="string, string array, boolean, or integer",
+      )
   }
 }
 
@@ -237,6 +251,24 @@ fn decode_one_of(value : Json) -> Condition raise PolicyParseError {
 }
 
 ///|
+fn decode_contains(value : Json) -> Condition raise PolicyParseError {
+  let object = expect_object(value, field="rules[].condition.contains")
+  if object.length() != 2 {
+    raise InvalidCondition("contains requires only path and value")
+  }
+  Contains(
+    path=expect_string(
+      required_field(object, "path"),
+      field="rules[].condition.contains.path",
+    ),
+    value=expect_string(
+      required_field(object, "value"),
+      field="rules[].condition.contains.value",
+    ),
+  )
+}
+
+///|
 fn decode_condition(value : Json) -> Condition raise PolicyParseError {
   let object = expect_object(value, field="rules[].condition")
   if object.length() != 1 {
@@ -274,6 +306,10 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
     Some(one_of) => return decode_one_of(one_of)
     None => ()
   }
+  match object.get("contains") {
+    Some(contains) => return decode_contains(contains)
+    None => ()
+  }
   match object.get("compare") {
     Some(compare) => return decode_compare(compare)
     None => ()
@@ -293,7 +329,7 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
     None => ()
   }
   raise InvalidCondition(
-    "expected exists, equals, same, one_of, compare, all, any, or not",
+    "expected exists, equals, same, one_of, contains, compare, all, any, or not",
   )
 }
 

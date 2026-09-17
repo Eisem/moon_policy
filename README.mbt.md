@@ -73,7 +73,7 @@ actions such as `project:read:*`.
 In JSON, write `{ "glob": "project:read:*" }` in a rule's `action` or
 `resource` field; plain JSON strings always mean exact matching.
 
-Rules may also require scalar attributes under `subject.<key>`,
+Rules may also require attributes under `subject.<key>`,
 `resource.<key>`, or `context.<key>`. Missing attributes never satisfy an
 `Equals` or `Exists` condition, so evaluation remains fail-closed.
 Negating a missing attribute remains unknown rather than becoming true.
@@ -81,13 +81,19 @@ An unknown condition never grants access; on a matching deny rule it denies
 conservatively.
 
 The JSON format expresses conditions as `exists`, `equals`, `same`, `one_of`,
-`compare`, `all`, `any`, and `not` objects. A resource-owner rule can use
+`contains`, `compare`, `all`, `any`, and `not` objects. A resource-owner rule can use
 `{ "same": { "left": "subject.id", "right": "resource.owner_id" } }`.
 Both values must exist and have the same scalar type. Integer thresholds use
 `{ "compare": { "path": "context.risk", "op": "lte", "value": 20 } }`;
 `op` may be `lt`, `lte`, `gt`, or `gte`. Missing or non-integer attributes are
 unknown and never satisfy an allow condition, even under `not`. Attribute
-values can be strings, booleans, or integers.
+values can be strings, string lists, booleans, or integers.
+
+For group membership, provide a string-list attribute such as
+`"subject_attributes": { "groups": ["users", "reviewers"] }` and test it with
+`{ "contains": { "path": "subject.groups", "value": "reviewers" } }`.
+Missing or non-list attributes remain unknown under `contains` and cannot
+become an allow through `not`.
 
 For an allowlist of regions or teams, use
 `{ "one_of": { "path": "context.region", "values": ["eu", "apac"] } }`.

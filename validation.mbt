@@ -27,6 +27,7 @@ fn valid_attribute_path(path : String) -> Bool {
 fn same_attribute_type(left : AttributeValue, right : AttributeValue) -> Bool {
   match (left, right) {
     (StringValue(_), StringValue(_))
+    | (StringListValue(_), StringListValue(_))
     | (BoolValue(_), BoolValue(_))
     | (IntValue(_), IntValue(_)) => true
     _ => false
@@ -45,7 +46,7 @@ fn validate_condition(
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
-    Equals(path~, ..) | Compare(path~, ..) =>
+    Equals(path~, ..) | Compare(path~, ..) | Contains(path~, ..) =>
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }

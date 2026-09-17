@@ -14,9 +14,10 @@ pub(all) enum Matcher {
 } derive(Debug, Eq)
 
 ///|
-/// A scalar attribute supplied by the caller for attribute-based authorization.
+/// An attribute supplied by the caller for attribute-based authorization.
 pub(all) enum AttributeValue {
   StringValue(String)
+  StringListValue(Array[String])
   BoolValue(Bool)
   IntValue(Int)
 } derive(Debug, Eq)
@@ -38,6 +39,7 @@ pub(all) enum Condition {
   Equals(path~ : String, value~ : AttributeValue)
   Same(left~ : String, right~ : String)
   OneOf(path~ : String, values~ : Array[AttributeValue])
+  Contains(path~ : String, value~ : String)
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
@@ -253,6 +255,7 @@ fn evaluate_condition(
           } else {
             match (actual, value) {
               (StringValue(_), StringValue(_))
+              | (StringListValue(_), StringListValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => ConditionFalse
               _ => ConditionUnknown
@@ -268,6 +271,7 @@ fn evaluate_condition(
           } else {
             match (left_value, right_value) {
               (StringValue(_), StringValue(_))
+              | (StringListValue(_), StringListValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => ConditionFalse
               _ => ConditionUnknown
@@ -286,6 +290,7 @@ fn evaluate_condition(
             }
             match (actual, value) {
               (StringValue(_), StringValue(_))
+              | (StringListValue(_), StringListValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => same_type = true
               _ => ()
@@ -297,6 +302,25 @@ fn evaluate_condition(
             ConditionUnknown
           }
         }
+      }
+    Contains(path~, value~) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(StringListValue(values)) => {
+          let mut found = false
+          for item in values {
+            if item == value {
+              found = true
+              break
+            }
+          }
+          if found {
+            ConditionTrue
+          } else {
+            ConditionFalse
+          }
+        }
+        Some(_) => ConditionUnknown
       }
     Compare(path~, op~, value~) =>
       match resolve_attribute(request, path) {

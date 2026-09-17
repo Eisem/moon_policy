@@ -2,6 +2,8 @@
 fn attribute_value_to_json(value : AttributeValue) -> Json {
   match value {
     StringValue(text) => Json::string(text)
+    StringListValue(values) =>
+      Json::array([ for value in values => Json::string(value) ])
     BoolValue(flag) => Json::boolean(flag)
     IntValue(number) => Json::number(Double::from_int(number))
   }
@@ -54,6 +56,13 @@ fn condition_to_json(condition : Condition) -> Json {
               for value in values => attribute_value_to_json(value)
             ],
           ),
+        }),
+      })
+    Contains(path~, value~) =>
+      Json::object({
+        "contains": Json::object({
+          "path": Json::string(path),
+          "value": Json::string(value),
         }),
       })
     Compare(path~, op~, value~) =>
