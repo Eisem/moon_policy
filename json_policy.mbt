@@ -106,7 +106,7 @@ fn decode_bindings(value : Json) -> Array[RoleBinding] raise PolicyParseError {
   let bindings : Array[RoleBinding] = []
   for entry in entries {
     let object = expect_object(entry, field="bindings[]")
-    reject_unknown_fields(object, ["subject", "role"], "bindings[]")
+    reject_unknown_fields(object, ["subject", "role", "resource"], "bindings[]")
     bindings.push(
       RoleBinding(
         subject=expect_string(
@@ -117,6 +117,7 @@ fn decode_bindings(value : Json) -> Array[RoleBinding] raise PolicyParseError {
           required_field(object, "role"),
           field="bindings[].role",
         ),
+        resource=decode_optional_matcher(object, "resource", "bindings[]"),
       ),
     )
   }
@@ -313,6 +314,7 @@ fn decode_conditions(
 fn decode_optional_matcher(
   object : Map[String, Json],
   field : String,
+  location : String,
 ) -> Matcher raise PolicyParseError {
   match object.get(field) {
     None => Any
@@ -322,23 +324,25 @@ fn decode_optional_matcher(
         Object(spec) => {
           if spec.length() != 1 {
             raise ExpectedType(
-              field="rules[]." + field,
+              field=location + "." + field,
               expected="string or one-key glob object",
             )
           }
           match spec.get("glob") {
             Some(pattern) =>
-              Glob(expect_string(pattern, field="rules[]." + field + ".glob"))
+              Glob(
+                expect_string(pattern, field=location + "." + field + ".glob"),
+              )
             None =>
               raise ExpectedType(
-                field="rules[]." + field,
+                field=location + "." + field,
                 expected="string or one-key glob object",
               )
           }
         }
         _ =>
           raise ExpectedType(
-            field="rules[]." + field,
+            field=location + "." + field,
             expected="string or one-key glob object",
           )
       }
@@ -360,9 +364,9 @@ fn decode_rules(value : Json) -> Array[Rule] raise PolicyParseError {
       Rule(
         id=expect_string(required_field(object, "id"), field="rules[].id"),
         effect=decode_effect(required_field(object, "effect")),
-        subject=decode_optional_matcher(object, "subject"),
-        action=decode_optional_matcher(object, "action"),
-        resource=decode_optional_matcher(object, "resource"),
+        subject=decode_optional_matcher(object, "subject", "rules[]"),
+        action=decode_optional_matcher(object, "action", "rules[]"),
+        resource=decode_optional_matcher(object, "resource", "rules[]"),
         condition=match object.get("condition") {
           Some(condition) => decode_condition(condition)
           None => Always

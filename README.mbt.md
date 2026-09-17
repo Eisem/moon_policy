@@ -62,6 +62,10 @@ Roles can inherit permissions transitively. For example, define
 `role_parents={ "admin": ["editor"] }` to `Policy`. Every referenced role must
 be declared in `roles`; cycles are rejected during validation. Inherited grants
 appear in the decision trace under the role that owns the permission.
+Bindings can limit a role grant to a resource: use
+`{ "subject": "alice", "role": "editor", "resource": { "glob": "/projects/alpha/*" } }`.
+An omitted `resource` matches all resources. Resource scope also applies to
+permissions inherited from parent roles.
 
 Rules can use `Glob("...")` where `*` matches any sequence and `?` matches
 one Unicode character. This is useful for HTTP-like resources and namespaced

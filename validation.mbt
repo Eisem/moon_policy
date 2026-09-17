@@ -167,7 +167,7 @@ pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
       break
     }
   }
-  let bindings_seen : Map[String, Bool] = {}
+  let bindings_seen : Array[RoleBinding] = []
   for index, binding in self.bindings {
     let location = "bindings." + index.to_string()
     if binding.subject == "" {
@@ -176,11 +176,19 @@ pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
     if !self.role_permissions.contains(binding.role) {
       issues.push(policy_issue("unknown_role", location, binding.role))
     }
-    let key = binding.subject + "\u{0000}" + binding.role
-    if bindings_seen.contains(key) {
-      issues.push(policy_issue("duplicate_binding", location, key))
+    for previous in bindings_seen {
+      if previous == binding {
+        issues.push(
+          policy_issue(
+            "duplicate_binding",
+            location,
+            binding.subject + ":" + binding.role,
+          ),
+        )
+        break
+      }
     }
-    bindings_seen[key] = true
+    bindings_seen.push(binding)
   }
   let rule_ids_seen : Map[String, Bool] = {}
   for index, rule in self.rules {

@@ -73,6 +73,7 @@ pub fn Rule::Rule(
 pub(all) struct RoleBinding {
   subject : String
   role : String
+  resource : Matcher
 } derive(Debug, Eq)
 
 ///|
@@ -80,8 +81,9 @@ pub(all) struct RoleBinding {
 pub fn RoleBinding::RoleBinding(
   subject~ : String,
   role~ : String,
+  resource? : Matcher = Any,
 ) -> RoleBinding {
-  { subject, role }
+  { subject, role, resource }
 }
 
 ///|
@@ -362,7 +364,8 @@ fn role_grants(
   let mut granted = false
   let visited : Map[String, Bool] = {}
   for binding in policy.bindings {
-    if binding.subject == request.subject {
+    if binding.subject == request.subject &&
+      matcher_matches(binding.resource, request.resource) {
       if role_grants_recursive(
           policy,
           binding.role,

@@ -111,6 +111,18 @@ fn Rule::to_json(self : Rule) -> Json {
 }
 
 ///|
+fn RoleBinding::to_json(self : RoleBinding) -> Json {
+  let object : Map[String, Json] = {
+    "subject": Json::string(self.subject),
+    "role": Json::string(self.role),
+  }
+  if !(self.resource is Any) {
+    object["resource"] = matcher_to_json(self.resource)
+  }
+  Json::object(object)
+}
+
+///|
 /// Serialize a policy to the documented JSON representation. A valid policy
 /// can be loaded again with `policy_from_json` without changing its behavior.
 pub fn Policy::to_json(self : Policy) -> Json {
@@ -135,12 +147,7 @@ pub fn Policy::to_json(self : Policy) -> Json {
     "role_parents": Json::object(parents),
     "bindings": Json::array(
       [
-        for binding in self.bindings => {
-          Json::object({
-            "subject": Json::string(binding.subject),
-            "role": Json::string(binding.role),
-          })
-        }
+        for binding in self.bindings => binding.to_json()
       ],
     ),
     "rules": Json::array([ for rule in self.rules => rule.to_json() ]),
