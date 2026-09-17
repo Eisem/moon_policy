@@ -39,6 +39,18 @@ fn validate_condition(
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
+    Same(left~, right~) => {
+      if !valid_attribute_path(left) {
+        issues.push(
+          policy_issue("invalid_attribute_path", location + ".left", left),
+        )
+      }
+      if !valid_attribute_path(right) {
+        issues.push(
+          policy_issue("invalid_attribute_path", location + ".right", right),
+        )
+      }
+    }
     AllOf(conditions) | AnyOf(conditions) => {
       if conditions.length() == 0 {
         issues.push(

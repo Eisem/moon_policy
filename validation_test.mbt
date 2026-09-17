@@ -53,3 +53,18 @@ test "role inheritance rejects unknown parent and cycles" {
   )
   assert_eq(cyclic.validate()[0].code, "role_inheritance_cycle")
 }
+
+///|
+test "validation checks both attribute comparison paths" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="bad-same",
+      effect=Allow,
+      condition=Same(left="bad.id", right="resource."),
+    ),
+  ])
+  let issues = policy.validate()
+  assert_eq(issues.length(), 2)
+  assert_eq(issues[0].location, "rules.0.condition.left")
+  assert_eq(issues[1].location, "rules.0.condition.right")
+}

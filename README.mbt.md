@@ -58,8 +58,10 @@ Negating a missing attribute remains unknown rather than becoming true.
 An unknown condition never grants access; on a matching deny rule it denies
 conservatively.
 
-The JSON format expresses conditions as `exists`, `equals`, `compare`, `all`,
-`any`, and `not` objects. Integer thresholds use
+The JSON format expresses conditions as `exists`, `equals`, `same`, `compare`,
+`all`, `any`, and `not` objects. A resource-owner rule can use
+`{ "same": { "left": "subject.id", "right": "resource.owner_id" } }`.
+Both values must exist and have the same scalar type. Integer thresholds use
 `{ "compare": { "path": "context.risk", "op": "lte", "value": 20 } }`;
 `op` may be `lt`, `lte`, `gt`, or `gte`. Missing or non-integer attributes are
 unknown and never satisfy an allow condition, even under `not`. Attribute

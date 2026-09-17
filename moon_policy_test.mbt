@@ -194,6 +194,57 @@ test "integer comparisons enforce inclusive and exclusive thresholds" {
 }
 
 ///|
+test "attribute equality supports resource ownership" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="owner-update",
+      effect=Allow,
+      action=Exact("document:update"),
+      condition=Same(left="subject.id", right="resource.owner_id"),
+    ),
+  ])
+  let owner = @moon_policy.Request(
+    subject="alice",
+    action="document:update",
+    resource="document:1",
+    resource_attributes={ "owner_id": StringValue("alice") },
+  )
+  let stranger = @moon_policy.Request(
+    subject="bob",
+    action="document:update",
+    resource="document:1",
+    resource_attributes={ "owner_id": StringValue("alice") },
+  )
+  assert_true(policy.authorize(owner).allowed)
+  assert_true(!policy.authorize(stranger).allowed)
+}
+
+///|
+test "attribute equality cannot grant on absent or incompatible values" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="matching-teams",
+      effect=Allow,
+      condition=Same(left="subject.team", right="resource.team"),
+    ),
+  ])
+  let missing = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+  )
+  let mistyped = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+    subject_attributes={ "team": StringValue("42") },
+    resource_attributes={ "team": IntValue(42) },
+  )
+  assert_true(!policy.authorize(missing).allowed)
+  assert_true(!policy.authorize(mistyped).allowed)
+}
+
+///|
 test "integer comparison with missing or mistyped attribute is unknown" {
   let policy = @moon_policy.Policy(rules=[
     Rule(

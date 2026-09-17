@@ -40,6 +40,7 @@ pub(all) enum Condition {
   Always
   Exists(String)
   Equals(path~ : String, value~ : AttributeValue)
+  Same(left~ : String, right~ : String)
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])

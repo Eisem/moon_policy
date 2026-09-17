@@ -71,6 +71,22 @@ test "JSON policy decodes integer comparisons" {
 }
 
 ///|
+test "JSON policy supports owner-based rules" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{"rules":[{"id":"owner","effect":"allow","action":"write","condition":{"same":{"left":"subject.id","right":"resource.owner_id"}}}]}
+    ),
+  )
+  let owner = @moon_policy.Request(
+    subject="alice",
+    action="write",
+    resource="doc:1",
+    resource_attributes={ "owner_id": StringValue("alice") },
+  )
+  assert_true(policy.authorize(owner).allowed)
+}
+
+///|
 test "JSON policy rejects non-integer comparison thresholds" {
   let source =
     #|{"rules":[{"id":"threshold","effect":"allow","condition":{"compare":{"path":"context.risk","op":"lte","value":"20"}}}]}

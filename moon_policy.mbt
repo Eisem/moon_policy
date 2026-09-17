@@ -36,6 +36,7 @@ pub(all) enum Condition {
   Always
   Exists(String)
   Equals(path~ : String, value~ : AttributeValue)
+  Same(left~ : String, right~ : String)
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
@@ -254,6 +255,22 @@ fn evaluate_condition(
               _ => ConditionUnknown
             }
           }
+      }
+    Same(left~, right~) =>
+      match
+        (resolve_attribute(request, left), resolve_attribute(request, right)) {
+        (Some(left_value), Some(right_value)) =>
+          if left_value == right_value {
+            ConditionTrue
+          } else {
+            match (left_value, right_value) {
+              (StringValue(_), StringValue(_))
+              | (BoolValue(_), BoolValue(_))
+              | (IntValue(_), IntValue(_)) => ConditionFalse
+              _ => ConditionUnknown
+            }
+          }
+        _ => ConditionUnknown
       }
     Compare(path~, op~, value~) =>
       match resolve_attribute(request, path) {
