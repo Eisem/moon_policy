@@ -33,12 +33,19 @@ fn run_cli(args : Array[String]) -> Int raise {
     println("invalid policy")
     return 2
   }
-  if args.length() == 3 && (args[0] == "eval" || args[0] == "explain") {
+  if args.length() == 3 && args[0] == "eval" {
     let policy = @policy.policy_from_json(args[1])
     let request = @policy.request_from_json(args[2])
     let decision = policy.authorize(request)
     println(decision.to_json().stringify())
     return if decision.allowed { 0 } else { 1 }
+  }
+  if args.length() == 3 && args[0] == "explain" {
+    let policy = @policy.policy_from_json(args[1])
+    let request = @policy.request_from_json(args[2])
+    let report = policy.explain(request)
+    println(report.to_json().stringify())
+    return if report.decision.allowed { 0 } else { 1 }
   }
   if args.length() == 1 && args[0] == "demo" {
     let policy = @policy.policy_from_json(

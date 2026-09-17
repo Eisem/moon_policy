@@ -24,6 +24,7 @@ test {
 moon run --target native cmd/main -- demo
 moon run --target native cmd/main -- check '{"rules":[]}'
 moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
+moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 ```
 
 The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
@@ -88,6 +89,10 @@ rejects invalid policy configuration before returning a policy.
 
 `request_from_json` decodes an authorization request, and `decision.to_json()`
 returns `allowed`, `reason`, and the ordered `trace` of matching grants/rules.
+`policy.explain(request)` returns the same decision together with an inspection
+of every rule's selectors and condition. The CLI `explain` command emits that
+report as JSON. Conditions are reported as satisfied, unsatisfied, unknown, or
+not evaluated; a matching deny with an unknown condition is marked applied.
 `policy.to_json()` exports a programmatically assembled policy in the same
 format accepted by `policy_from_json`. Validate a policy before persisting it;
 invalid role references, cycles, and malformed conditions are rejected when

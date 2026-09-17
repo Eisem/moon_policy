@@ -49,6 +49,13 @@ pub(all) enum Condition {
   Not(Condition)
 } derive(Eq, @debug.Debug)
 
+pub(all) enum ConditionStatus {
+  NotEvaluated
+  Satisfied
+  Unsatisfied
+  Unknown
+} derive(Eq, @debug.Debug)
+
 pub(all) struct Decision {
   allowed : Bool
   reason : DecisionReason
@@ -67,6 +74,12 @@ pub(all) enum Effect {
   Deny
 } derive(Eq, @debug.Debug)
 
+pub(all) struct EvaluationReport {
+  decision : Decision
+  rules : Array[RuleEvaluation]
+} derive(Eq, @debug.Debug)
+pub fn EvaluationReport::to_json(Self) -> Json
+
 pub(all) enum Matcher {
   Any
   Exact(String)
@@ -81,6 +94,7 @@ pub(all) struct Policy {
 } derive(@debug.Debug)
 pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_parents? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
 pub fn Policy::authorize(Self, Request) -> Decision
+pub fn Policy::explain(Self, Request) -> EvaluationReport
 pub fn Policy::to_json(Self) -> Json
 pub fn Policy::validate(Self) -> Array[PolicyIssue]
 
@@ -115,6 +129,16 @@ pub(all) struct Rule {
   condition : Condition
 } derive(@debug.Debug)
 pub fn Rule::Rule(id~ : String, effect~ : Effect, subject? : Matcher, action? : Matcher, resource? : Matcher, condition? : Condition) -> Self
+
+pub(all) struct RuleEvaluation {
+  id : String
+  effect : Effect
+  subject_matches : Bool
+  action_matches : Bool
+  resource_matches : Bool
+  condition_status : ConditionStatus
+  applied : Bool
+} derive(Eq, @debug.Debug)
 
 // Type aliases
 
