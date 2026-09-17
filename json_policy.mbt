@@ -6,6 +6,7 @@ pub(all) suberror PolicyParseError {
   ExpectedType(field~ : String, expected~ : String)
   InvalidEffect(String)
   InvalidCondition(String)
+  InvalidPolicy(String)
 } derive(Debug, Eq)
 
 ///|
@@ -132,6 +133,9 @@ fn decode_attribute_value(
 ///|
 fn decode_condition(value : Json) -> Condition raise PolicyParseError {
   let object = expect_object(value, field="rules[].condition")
+  if object.length() != 1 {
+    raise InvalidCondition("a condition must have exactly one operator")
+  }
   match object.get("exists") {
     Some(path) => Exists(expect_string(path, field="rules[].condition.exists"))
     None =>
@@ -141,6 +145,9 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
             equals,
             field="rules[].condition.equals",
           )
+          if equals_object.length() != 2 {
+            raise InvalidCondition("equals requires only path and value")
+          }
           Equals(
             path=expect_string(
               required_field(equals_object, "path"),
@@ -247,5 +254,10 @@ pub fn policy_from_json(source : String) -> Policy raise PolicyParseError {
     Some(value) => decode_rules(value)
     None => []
   }
-  Policy(role_permissions~, bindings~, rules~)
+  let policy = Policy(role_permissions~, bindings~, rules~)
+  let issues = policy.validate()
+  if issues.length() > 0 {
+    raise InvalidPolicy(issues[0].code + " at " + issues[0].location)
+  }
+  policy
 }

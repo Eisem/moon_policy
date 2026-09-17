@@ -36,6 +36,8 @@ conservatively.
 
 The JSON format expresses conditions as `exists`, `equals`, `all`, `any`, and
 `not` objects. Attribute values can be strings, booleans, or integers.
+Call `policy.validate()` for structured configuration diagnostics. JSON loading
+rejects invalid policy configuration before returning a policy.
 
 ## JSON policies
 

@@ -120,3 +120,34 @@ test "JSON policy preserves integer attribute values" {
   )
   assert_true(decision.allowed)
 }
+
+///|
+test "JSON policy rejects duplicate rule ids" {
+  let source =
+    #|{ "rules": [
+    #|  { "id": "same", "effect": "allow" },
+    #|  { "id": "same", "effect": "deny" }
+    #|] }
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    InvalidPolicy(message) => assert_true(message.contains("duplicate_rule_id"))
+    _ => fail("expected an invalid policy error")
+  } noraise {
+    _ => fail("expected duplicate rule ids to fail")
+  }
+}
+
+///|
+test "JSON condition requires exactly one operator" {
+  let source =
+    #|{ "rules": [{
+    #|  "id": "ambiguous",
+    #|  "effect": "allow",
+    #|  "condition": { "exists": "subject.team", "not": { "exists": "context.blocked" } }
+    #|}] }
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    InvalidCondition(_) => ()
+    _ => fail("expected an invalid condition error")
+  } noraise {
+    _ => fail("expected ambiguous condition to fail")
+  }
+}

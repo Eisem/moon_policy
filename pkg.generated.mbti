@@ -17,6 +17,7 @@ pub(all) suberror PolicyParseError {
   ExpectedType(field~ : String, expected~ : String)
   InvalidEffect(String)
   InvalidCondition(String)
+  InvalidPolicy(String)
 } derive(Eq, @debug.Debug)
 
 // Types and methods
@@ -65,6 +66,13 @@ pub(all) struct Policy {
 } derive(@debug.Debug)
 pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
 pub fn Policy::authorize(Self, Request) -> Decision
+pub fn Policy::validate(Self) -> Array[PolicyIssue]
+
+pub(all) struct PolicyIssue {
+  code : String
+  location : String
+  message : String
+} derive(Eq, @debug.Debug)
 
 pub(all) struct Request {
   subject : String
