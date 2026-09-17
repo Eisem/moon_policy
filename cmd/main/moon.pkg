@@ -1,0 +1,7 @@
+import {
+  "eisem/moon_policy" @policy,
+}
+
+options(
+  "is-main": true,
+)
