@@ -39,6 +39,9 @@ The JSON format expresses conditions as `exists`, `equals`, `all`, `any`, and
 Call `policy.validate()` for structured configuration diagnostics. JSON loading
 rejects invalid policy configuration before returning a policy.
 
+`request_from_json` decodes an authorization request, and `decision.to_json()`
+returns `allowed`, `reason`, and the ordered `trace` of matching grants/rules.
+
 ## JSON policies
 
 `policy_from_json` loads a constrained JSON format. Unknown fields are ignored,

@@ -10,6 +10,8 @@ pub fn glob_matches(String, String) -> Bool
 
 pub fn policy_from_json(String) -> Policy raise PolicyParseError
 
+pub fn request_from_json(String) -> Request raise PolicyParseError
+
 // Errors
 pub(all) suberror PolicyParseError {
   InvalidJson(String)
@@ -41,6 +43,7 @@ pub(all) struct Decision {
   reason : DecisionReason
   trace : Array[String]
 } derive(Eq, @debug.Debug)
+pub fn Decision::to_json(Self) -> Json
 
 pub(all) enum DecisionReason {
   Allowed
