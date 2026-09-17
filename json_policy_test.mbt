@@ -58,3 +58,68 @@ test "JSON policy rejects non-string permissions" {
     _ => fail("expected JSON decoding to fail")
   }
 }
+
+///|
+test "JSON policy decodes nested attribute conditions" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{
+      #|  "rules": [{
+      #|    "id": "platform-write",
+      #|    "effect": "allow",
+      #|    "action": "document:write",
+      #|    "condition": {
+      #|      "all": [
+      #|        { "equals": { "path": "subject.team", "value": "platform" } },
+      #|        { "not": { "equals": { "path": "context.blocked", "value": true } } }
+      #|      ]
+      #|    }
+      #|  }]
+      #|}
+    ),
+  )
+  let allowed = policy.authorize(
+    Request(
+      subject="alice",
+      action="document:write",
+      resource="document:1",
+      subject_attributes={ "team": StringValue("platform") },
+      context={ "blocked": BoolValue(false) },
+    ),
+  )
+  let blocked = policy.authorize(
+    Request(
+      subject="alice",
+      action="document:write",
+      resource="document:1",
+      subject_attributes={ "team": StringValue("platform") },
+      context={ "blocked": BoolValue(true) },
+    ),
+  )
+  assert_true(allowed.allowed)
+  assert_true(!blocked.allowed)
+}
+
+///|
+test "JSON policy preserves integer attribute values" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{
+      #|  "rules": [{
+      #|    "id": "minimum-level",
+      #|    "effect": "allow",
+      #|    "condition": { "equals": { "path": "subject.level", "value": 3 } }
+      #|  }]
+      #|}
+    ),
+  )
+  let decision = policy.authorize(
+    Request(
+      subject="alice",
+      action="document:read",
+      resource="document:1",
+      subject_attributes={ "level": IntValue(3) },
+    ),
+  )
+  assert_true(decision.allowed)
+}

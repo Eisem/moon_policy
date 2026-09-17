@@ -5,6 +5,7 @@ pub(all) suberror PolicyParseError {
   MissingField(String)
   ExpectedType(field~ : String, expected~ : String)
   InvalidEffect(String)
+  InvalidCondition(String)
 } derive(Debug, Eq)
 
 ///|
@@ -108,6 +109,89 @@ fn decode_effect(value : Json) -> Effect raise PolicyParseError {
 }
 
 ///|
+fn decode_attribute_value(
+  value : Json,
+  field~ : String,
+) -> AttributeValue raise PolicyParseError {
+  match value {
+    String(string) => StringValue(string)
+    True => BoolValue(true)
+    False => BoolValue(false)
+    Number(number, ..) => {
+      let integer = number.to_int()
+      if Double::from_int(integer) == number {
+        IntValue(integer)
+      } else {
+        raise ExpectedType(field~, expected="string, boolean, or integer")
+      }
+    }
+    _ => raise ExpectedType(field~, expected="string, boolean, or integer")
+  }
+}
+
+///|
+fn decode_condition(value : Json) -> Condition raise PolicyParseError {
+  let object = expect_object(value, field="rules[].condition")
+  match object.get("exists") {
+    Some(path) => Exists(expect_string(path, field="rules[].condition.exists"))
+    None =>
+      match object.get("equals") {
+        Some(equals) => {
+          let equals_object = expect_object(
+            equals,
+            field="rules[].condition.equals",
+          )
+          Equals(
+            path=expect_string(
+              required_field(equals_object, "path"),
+              field="rules[].condition.equals.path",
+            ),
+            value=decode_attribute_value(
+              required_field(equals_object, "value"),
+              field="rules[].condition.equals.value",
+            ),
+          )
+        }
+        None =>
+          match object.get("all") {
+            Some(conditions) =>
+              AllOf(
+                decode_conditions(conditions, field="rules[].condition.all"),
+              )
+            None =>
+              match object.get("any") {
+                Some(conditions) =>
+                  AnyOf(
+                    decode_conditions(conditions, field="rules[].condition.any"),
+                  )
+                None =>
+                  match object.get("not") {
+                    Some(condition) => Not(decode_condition(condition))
+                    None =>
+                      raise InvalidCondition(
+                        "expected exists, equals, all, any, or not",
+                      )
+                  }
+              }
+          }
+      }
+  }
+}
+
+///|
+fn decode_conditions(
+  value : Json,
+  field~ : String,
+) -> Array[Condition] raise PolicyParseError {
+  let values = expect_array(value, field~)
+  let conditions : Array[Condition] = []
+  for value in values {
+    conditions.push(decode_condition(value))
+  }
+  conditions
+}
+
+///|
 fn decode_optional_matcher(
   object : Map[String, Json],
   field : String,
@@ -131,6 +215,10 @@ fn decode_rules(value : Json) -> Array[Rule] raise PolicyParseError {
         subject=decode_optional_matcher(object, "subject"),
         action=decode_optional_matcher(object, "action"),
         resource=decode_optional_matcher(object, "resource"),
+        condition=match object.get("condition") {
+          Some(condition) => decode_condition(condition)
+          None => Always
+        },
       ),
     )
   }
