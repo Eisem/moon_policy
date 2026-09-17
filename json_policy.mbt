@@ -205,7 +205,32 @@ fn decode_optional_matcher(
 ) -> Matcher raise PolicyParseError {
   match object.get(field) {
     None => Any
-    Some(value) => Exact(expect_string(value, field="rules[]." + field))
+    Some(value) =>
+      match value {
+        String(exact) => Exact(exact)
+        Object(spec) => {
+          if spec.length() != 1 {
+            raise ExpectedType(
+              field="rules[]." + field,
+              expected="string or one-key glob object",
+            )
+          }
+          match spec.get("glob") {
+            Some(pattern) =>
+              Glob(expect_string(pattern, field="rules[]." + field + ".glob"))
+            None =>
+              raise ExpectedType(
+                field="rules[]." + field,
+                expected="string or one-key glob object",
+              )
+          }
+        }
+        _ =>
+          raise ExpectedType(
+            field="rules[]." + field,
+            expected="string or one-key glob object",
+          )
+      }
   }
 }
 

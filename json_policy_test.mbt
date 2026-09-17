@@ -151,3 +151,51 @@ test "JSON condition requires exactly one operator" {
     _ => fail("expected ambiguous condition to fail")
   }
 }
+
+///|
+test "JSON matcher objects support glob patterns" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{
+      #|  "rules": [{
+      #|    "id": "project-read",
+      #|    "effect": "allow",
+      #|    "action": { "glob": "project:read:*" },
+      #|    "resource": { "glob": "/projects/*/documents/?" }
+      #|  }]
+      #|}
+    ),
+  )
+  let allowed = policy.authorize(
+    Request(
+      subject="alice",
+      action="project:read:metadata",
+      resource="/projects/p1/documents/a",
+    ),
+  )
+  let rejected = policy.authorize(
+    Request(
+      subject="alice",
+      action="project:write:metadata",
+      resource="/projects/p1/documents/a",
+    ),
+  )
+  assert_true(allowed.allowed)
+  assert_true(!rejected.allowed)
+}
+
+///|
+test "JSON matcher rejects ambiguous objects" {
+  let source =
+    #|{ "rules": [{
+    #|  "id": "bad",
+    #|  "effect": "allow",
+    #|  "resource": { "glob": "*", "exact": "admin" }
+    #|}] }
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    ExpectedType(field="rules[].resource", ..) => ()
+    _ => fail("expected an invalid matcher error")
+  } noraise {
+    _ => fail("expected an ambiguous matcher to fail")
+  }
+}

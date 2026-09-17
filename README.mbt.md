@@ -42,6 +42,8 @@ rules, JSON policy/request parsing, and a native CLI.
 Rules can use `Glob("...")` where `*` matches any sequence and `?` matches
 one Unicode character. This is useful for HTTP-like resources and namespaced
 actions such as `project:read:*`.
+In JSON, write `{ "glob": "project:read:*" }` in a rule's `action` or
+`resource` field; plain JSON strings always mean exact matching.
 
 Rules may also require scalar attributes under `subject.<key>`,
 `resource.<key>`, or `context.<key>`. Missing attributes never satisfy an
