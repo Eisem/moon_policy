@@ -23,6 +23,7 @@ test {
 ```sh
 moon run --target native cmd/main -- demo
 moon run --target native cmd/main -- check '{"rules":[]}'
+moon run --target native cmd/main -- lint '{"rules":[]}'
 moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- diff '{"rules":[]}' '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
@@ -126,6 +127,10 @@ starter policy regression suite.
 selector, condition, and applied counts. `uncovered_rule_ids()` identifies
 rules that the supplied corpus never selected; it does not prove those rules
 are unreachable in all possible requests.
+`policy.lint()` returns non-blocking warnings for unrestricted allow rules,
+wildcard or duplicate role permissions, duplicate parent roles, duplicate rule
+bodies, and allow conditions that cannot succeed. `lint` emits the warnings as
+JSON; a warning does not make a policy invalid or change its decisions.
 
 ## JSON policies
 

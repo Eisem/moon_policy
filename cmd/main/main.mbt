@@ -33,6 +33,14 @@ fn run_cli(args : Array[String]) -> Int raise {
     println("invalid policy")
     return 2
   }
+  if args.length() == 2 && args[0] == "lint" {
+    let policy = @policy.policy_from_json(args[1])
+    let warnings = policy.lint()
+    println(
+      Json::array([ for warning in warnings => warning.to_json() ]).stringify(),
+    )
+    return 0
+  }
   if args.length() == 3 && args[0] == "eval" {
     let policy = @policy.policy_from_json(args[1])
     let request = @policy.request_from_json(args[2])
@@ -82,6 +90,7 @@ fn run_cli(args : Array[String]) -> Int raise {
     return if decision.allowed { 0 } else { 1 }
   }
   println("usage: moon-policy check POLICY_JSON")
+  println("       moon-policy lint POLICY_JSON")
   println("       moon-policy eval POLICY_JSON REQUEST_JSON")
   println("       moon-policy explain POLICY_JSON REQUEST_JSON")
   println(
