@@ -37,6 +37,7 @@ pub(all) enum Condition {
   Exists(String)
   Equals(path~ : String, value~ : AttributeValue)
   Same(left~ : String, right~ : String)
+  OneOf(path~ : String, values~ : Array[AttributeValue])
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
@@ -271,6 +272,29 @@ fn evaluate_condition(
             }
           }
         _ => ConditionUnknown
+      }
+    OneOf(path~, values~) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(actual) => {
+          let mut same_type = false
+          for value in values {
+            if actual == value {
+              return ConditionTrue
+            }
+            match (actual, value) {
+              (StringValue(_), StringValue(_))
+              | (BoolValue(_), BoolValue(_))
+              | (IntValue(_), IntValue(_)) => same_type = true
+              _ => ()
+            }
+          }
+          if same_type {
+            ConditionFalse
+          } else {
+            ConditionUnknown
+          }
+        }
       }
     Compare(path~, op~, value~) =>
       match resolve_attribute(request, path) {

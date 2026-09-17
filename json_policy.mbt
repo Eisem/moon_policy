@@ -189,72 +189,89 @@ fn decode_same(value : Json) -> Condition raise PolicyParseError {
 }
 
 ///|
+fn decode_one_of(value : Json) -> Condition raise PolicyParseError {
+  let object = expect_object(value, field="rules[].condition.one_of")
+  if object.length() != 2 {
+    raise InvalidCondition("one_of requires only path and values")
+  }
+  let source = expect_array(
+    required_field(object, "values"),
+    field="rules[].condition.one_of.values",
+  )
+  let values : Array[AttributeValue] = []
+  for item in source {
+    values.push(
+      decode_attribute_value(item, field="rules[].condition.one_of.values[]"),
+    )
+  }
+  OneOf(
+    path=expect_string(
+      required_field(object, "path"),
+      field="rules[].condition.one_of.path",
+    ),
+    values~,
+  )
+}
+
+///|
 fn decode_condition(value : Json) -> Condition raise PolicyParseError {
   let object = expect_object(value, field="rules[].condition")
   if object.length() != 1 {
     raise InvalidCondition("a condition must have exactly one operator")
   }
   match object.get("exists") {
-    Some(path) => Exists(expect_string(path, field="rules[].condition.exists"))
-    None =>
-      match object.get("equals") {
-        Some(equals) => {
-          let equals_object = expect_object(
-            equals,
-            field="rules[].condition.equals",
-          )
-          if equals_object.length() != 2 {
-            raise InvalidCondition("equals requires only path and value")
-          }
-          Equals(
-            path=expect_string(
-              required_field(equals_object, "path"),
-              field="rules[].condition.equals.path",
-            ),
-            value=decode_attribute_value(
-              required_field(equals_object, "value"),
-              field="rules[].condition.equals.value",
-            ),
-          )
-        }
-        None =>
-          match object.get("same") {
-            Some(same) => decode_same(same)
-            None =>
-              match object.get("compare") {
-                Some(compare) => decode_compare(compare)
-                None =>
-                  match object.get("all") {
-                    Some(conditions) =>
-                      AllOf(
-                        decode_conditions(
-                          conditions,
-                          field="rules[].condition.all",
-                        ),
-                      )
-                    None =>
-                      match object.get("any") {
-                        Some(conditions) =>
-                          AnyOf(
-                            decode_conditions(
-                              conditions,
-                              field="rules[].condition.any",
-                            ),
-                          )
-                        None =>
-                          match object.get("not") {
-                            Some(condition) => Not(decode_condition(condition))
-                            None =>
-                              raise InvalidCondition(
-                                "expected exists, equals, same, compare, all, any, or not",
-                              )
-                          }
-                      }
-                  }
-              }
-          }
-      }
+    Some(path) =>
+      return Exists(expect_string(path, field="rules[].condition.exists"))
+    None => ()
   }
+  match object.get("equals") {
+    Some(equals) => {
+      let fields = expect_object(equals, field="rules[].condition.equals")
+      if fields.length() != 2 {
+        raise InvalidCondition("equals requires only path and value")
+      }
+      return Equals(
+        path=expect_string(
+          required_field(fields, "path"),
+          field="rules[].condition.equals.path",
+        ),
+        value=decode_attribute_value(
+          required_field(fields, "value"),
+          field="rules[].condition.equals.value",
+        ),
+      )
+    }
+    None => ()
+  }
+  match object.get("same") {
+    Some(same) => return decode_same(same)
+    None => ()
+  }
+  match object.get("one_of") {
+    Some(one_of) => return decode_one_of(one_of)
+    None => ()
+  }
+  match object.get("compare") {
+    Some(compare) => return decode_compare(compare)
+    None => ()
+  }
+  match object.get("all") {
+    Some(conditions) =>
+      return AllOf(decode_conditions(conditions, field="rules[].condition.all"))
+    None => ()
+  }
+  match object.get("any") {
+    Some(conditions) =>
+      return AnyOf(decode_conditions(conditions, field="rules[].condition.any"))
+    None => ()
+  }
+  match object.get("not") {
+    Some(condition) => return Not(decode_condition(condition))
+    None => ()
+  }
+  raise InvalidCondition(
+    "expected exists, equals, same, one_of, compare, all, any, or not",
+  )
 }
 
 ///|

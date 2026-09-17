@@ -24,6 +24,16 @@ fn valid_attribute_path(path : String) -> Bool {
 }
 
 ///|
+fn same_attribute_type(left : AttributeValue, right : AttributeValue) -> Bool {
+  match (left, right) {
+    (StringValue(_), StringValue(_))
+    | (BoolValue(_), BoolValue(_))
+    | (IntValue(_), IntValue(_)) => true
+    _ => false
+  }
+}
+
+///|
 fn validate_condition(
   condition : Condition,
   location : String,
@@ -39,6 +49,27 @@ fn validate_condition(
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
+    OneOf(path~, values~) => {
+      if !valid_attribute_path(path) {
+        issues.push(policy_issue("invalid_attribute_path", location, path))
+      }
+      if values.length() == 0 {
+        issues.push(
+          policy_issue("empty_value_set", location, "value set is empty"),
+        )
+      } else {
+        for value in values {
+          if !same_attribute_type(values[0], value) {
+            issues.push(
+              policy_issue(
+                "mixed_value_types", location, "value set has mixed types",
+              ),
+            )
+            break
+          }
+        }
+      }
+    }
     Same(left~, right~) => {
       if !valid_attribute_path(left) {
         issues.push(

@@ -87,6 +87,34 @@ test "JSON policy supports owner-based rules" {
 }
 
 ///|
+test "JSON policy decodes set membership" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{"rules":[{"id":"regions","effect":"allow","condition":{"one_of":{"path":"context.region","values":["eu","apac"]}}}]}
+    ),
+  )
+  let request = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+    context={ "region": StringValue("eu") },
+  )
+  assert_true(policy.authorize(request).allowed)
+}
+
+///|
+test "JSON policy rejects mixed set element types" {
+  let source =
+    #|{"rules":[{"id":"mixed","effect":"allow","condition":{"one_of":{"path":"context.region","values":["eu",1]}}}]}
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    InvalidPolicy(message) => assert_true(message.contains("mixed_value_types"))
+    _ => fail("expected a validation error")
+  } noraise {
+    _ => fail("expected JSON decoding to fail")
+  }
+}
+
+///|
 test "JSON policy rejects non-integer comparison thresholds" {
   let source =
     #|{"rules":[{"id":"threshold","effect":"allow","condition":{"compare":{"path":"context.risk","op":"lte","value":"20"}}}]}

@@ -245,6 +245,48 @@ test "attribute equality cannot grant on absent or incompatible values" {
 }
 
 ///|
+test "set membership grants only listed regions" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="regional-read",
+      effect=Allow,
+      action=Exact("report:read"),
+      condition=OneOf(path="context.region", values=[
+        StringValue("eu"),
+        StringValue("apac"),
+      ]),
+    ),
+  ])
+  let allowed = @moon_policy.Request(
+    subject="alice",
+    action="report:read",
+    resource="report:1",
+    context={ "region": StringValue("apac") },
+  )
+  let rejected = @moon_policy.Request(
+    subject="alice",
+    action="report:read",
+    resource="report:1",
+    context={ "region": StringValue("us") },
+  )
+  let mistyped = @moon_policy.Request(
+    subject="alice",
+    action="report:read",
+    resource="report:1",
+    context={ "region": IntValue(1) },
+  )
+  let missing = @moon_policy.Request(
+    subject="alice",
+    action="report:read",
+    resource="report:1",
+  )
+  assert_true(policy.authorize(allowed).allowed)
+  assert_true(!policy.authorize(rejected).allowed)
+  assert_true(!policy.authorize(mistyped).allowed)
+  assert_true(!policy.authorize(missing).allowed)
+}
+
+///|
 test "integer comparison with missing or mistyped attribute is unknown" {
   let policy = @moon_policy.Policy(rules=[
     Rule(

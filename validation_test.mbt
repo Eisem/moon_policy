@@ -68,3 +68,15 @@ test "validation checks both attribute comparison paths" {
   assert_eq(issues[0].location, "rules.0.condition.left")
   assert_eq(issues[1].location, "rules.0.condition.right")
 }
+
+///|
+test "validation rejects empty membership sets" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="empty-set",
+      effect=Allow,
+      condition=OneOf(path="context.region", values=[]),
+    ),
+  ])
+  assert_eq(policy.validate()[0].code, "empty_value_set")
+}
