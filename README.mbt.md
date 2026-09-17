@@ -95,8 +95,9 @@ loaded again.
 
 ## JSON policies
 
-`policy_from_json` loads a constrained JSON format. Unknown fields are ignored,
-but invalid required fields are rejected.
+`policy_from_json` loads a constrained JSON format. Unknown policy, binding,
+and rule fields are rejected so a misspelled restriction cannot silently
+broaden access.
 
 ```mbt check
 ///|

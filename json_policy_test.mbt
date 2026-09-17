@@ -115,6 +115,30 @@ test "JSON policy rejects mixed set element types" {
 }
 
 ///|
+test "JSON policy rejects misspelled rule restrictions" {
+  let source =
+    #|{"rules":[{"id":"too-broad","effect":"allow","actoin":"document:read"}]}
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    UnknownField(path) => assert_eq(path, "rules[].actoin")
+    _ => fail("expected unknown rule field")
+  } noraise {
+    _ => fail("expected JSON decoding to fail")
+  }
+}
+
+///|
+test "JSON policy rejects misspelled top-level sections" {
+  let source =
+    #|{"roles":{"editor":["write"]},"ruless":[{"id":"deny-write","effect":"deny"}]}
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    UnknownField(path) => assert_eq(path, "policy.ruless")
+    _ => fail("expected unknown policy field")
+  } noraise {
+    _ => fail("expected JSON decoding to fail")
+  }
+}
+
+///|
 test "JSON policy rejects non-integer comparison thresholds" {
   let source =
     #|{"rules":[{"id":"threshold","effect":"allow","condition":{"compare":{"path":"context.risk","op":"lte","value":"20"}}}]}

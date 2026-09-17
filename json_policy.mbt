@@ -7,6 +7,7 @@ pub(all) suberror PolicyParseError {
   InvalidEffect(String)
   InvalidCondition(String)
   InvalidPolicy(String)
+  UnknownField(String)
 } derive(Debug, Eq)
 
 ///|
@@ -54,6 +55,26 @@ fn required_field(
 }
 
 ///|
+fn reject_unknown_fields(
+  object : Map[String, Json],
+  allowed : Array[String],
+  location : String,
+) -> Unit raise PolicyParseError {
+  for field, _ in object {
+    let mut known = false
+    for candidate in allowed {
+      if field == candidate {
+        known = true
+        break
+      }
+    }
+    if !known {
+      raise UnknownField(location + "." + field)
+    }
+  }
+}
+
+///|
 fn decode_permissions(
   value : Json,
   field~ : String,
@@ -85,6 +106,7 @@ fn decode_bindings(value : Json) -> Array[RoleBinding] raise PolicyParseError {
   let bindings : Array[RoleBinding] = []
   for entry in entries {
     let object = expect_object(entry, field="bindings[]")
+    reject_unknown_fields(object, ["subject", "role"], "bindings[]")
     bindings.push(
       RoleBinding(
         subject=expect_string(
@@ -329,6 +351,11 @@ fn decode_rules(value : Json) -> Array[Rule] raise PolicyParseError {
   let rules : Array[Rule] = []
   for entry in entries {
     let object = expect_object(entry, field="rules[]")
+    reject_unknown_fields(
+      object,
+      ["id", "effect", "subject", "action", "resource", "condition"],
+      "rules[]",
+    )
     rules.push(
       Rule(
         id=expect_string(required_field(object, "id"), field="rules[].id"),
@@ -349,13 +376,18 @@ fn decode_rules(value : Json) -> Array[Rule] raise PolicyParseError {
 ///|
 /// Decode the documented JSON representation of a policy.
 ///
-/// `roles`, `bindings`, and `rules` are optional. Unknown fields are ignored so
-/// future policy metadata does not change the authorization semantics.
+/// `roles`, `role_parents`, `bindings`, and `rules` are optional. Unknown fields
+/// are rejected to prevent misspelled restrictions from widening access.
 pub fn policy_from_json(source : String) -> Policy raise PolicyParseError {
   let root = @json.parse(source) catch {
     error => raise InvalidJson(error.to_string())
   }
   let object = expect_object(root, field="policy")
+  reject_unknown_fields(
+    object,
+    ["roles", "role_parents", "bindings", "rules"],
+    "policy",
+  )
   let role_permissions = match object.get("roles") {
     Some(value) => decode_roles(value, field="roles")
     None => {}

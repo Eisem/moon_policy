@@ -20,6 +20,7 @@ pub(all) suberror PolicyParseError {
   InvalidEffect(String)
   InvalidCondition(String)
   InvalidPolicy(String)
+  UnknownField(String)
 } derive(Eq, @debug.Debug)
 
 // Types and methods
