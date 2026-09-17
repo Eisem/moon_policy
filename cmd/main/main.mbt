@@ -57,6 +57,13 @@ fn run_cli(args : Array[String]) -> Int raise {
     )
     return if changes.length() == 0 { 0 } else { 1 }
   }
+  if args.length() == 3 && args[0] == "verify" {
+    let policy = @policy.policy_from_json(args[1])
+    let cases = @policy.cases_from_json(args[2])
+    let result = policy.run_cases(cases)
+    println(result.to_json().stringify())
+    return if result.failed == 0 { 0 } else { 1 }
+  }
   if args.length() == 1 && args[0] == "demo" {
     let policy = @policy.policy_from_json(
       "{\"roles\":{\"editor\":[\"document:read\"]},\"bindings\":[{\"subject\":\"alice\",\"role\":\"editor\"}]}",
@@ -74,6 +81,7 @@ fn run_cli(args : Array[String]) -> Int raise {
   println(
     "       moon-policy diff OLD_POLICY_JSON NEW_POLICY_JSON REQUESTS_JSON",
   )
+  println("       moon-policy verify POLICY_JSON CASES_JSON")
   println("       moon-policy demo")
   2
 }

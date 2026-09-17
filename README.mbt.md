@@ -26,6 +26,7 @@ moon run --target native cmd/main -- check '{"rules":[]}'
 moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- diff '{"rules":[]}' '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
+moon run --target native cmd/main -- verify '{"rules":[]}' '[{"name":"deny unknown","request":{"subject":"alice","action":"read","resource":"doc:1"},"expected_allowed":false}]'
 ```
 
 The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
@@ -35,6 +36,8 @@ fixtures for integration tests and future file-input support.
 For `diff`, exit 0 means no access decisions changed in the supplied request
 array; exit 1 means at least one request became allowed or denied. The JSON
 output contains only changed decisions, in input order.
+For `verify`, exit 0 means all named cases passed; exit 1 means one or more
+expectations failed. The JSON output includes every case and aggregate counts.
 
 For exit-code-sensitive automation, run the built native executable directly.
 The installed June 2026 `moon run` wrapper returns 0 even when this CLI exits 1.
@@ -115,6 +118,9 @@ loaded again.
 a request corpus. It reports newly allowed and newly denied requests, while
 ignoring changes that affect only trace text. `requests_from_json` accepts a
 JSON array of requests for this workflow.
+`cases_from_json` loads named requests with `expected_allowed` booleans, and
+`policy.run_cases(cases)` checks them all. See `examples/cases.json` for a
+starter policy regression suite.
 
 ## JSON policies
 

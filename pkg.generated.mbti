@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn cases_from_json(String) -> Array[PolicyCase] raise PolicyParseError
+
 pub fn glob_matches(String, String) -> Bool
 
 pub fn policy_from_json(String) -> Policy raise PolicyParseError
@@ -113,14 +115,37 @@ pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_paren
 pub fn Policy::access_changes(Self, Self, Array[Request]) -> Array[AccessChange]
 pub fn Policy::authorize(Self, Request) -> Decision
 pub fn Policy::explain(Self, Request) -> EvaluationReport
+pub fn Policy::run_cases(Self, Array[PolicyCase]) -> PolicySuiteResult
 pub fn Policy::to_json(Self) -> Json
 pub fn Policy::validate(Self) -> Array[PolicyIssue]
+
+pub(all) struct PolicyCase {
+  name : String
+  request : Request
+  expected_allowed : Bool
+} derive(Eq, @debug.Debug)
+pub fn PolicyCase::PolicyCase(name~ : String, request~ : Request, expected_allowed~ : Bool) -> Self
+
+pub(all) struct PolicyCaseResult {
+  name : String
+  request : Request
+  expected_allowed : Bool
+  decision : Decision
+  passed : Bool
+} derive(Eq, @debug.Debug)
 
 pub(all) struct PolicyIssue {
   code : String
   location : String
   message : String
 } derive(Eq, @debug.Debug)
+
+pub(all) struct PolicySuiteResult {
+  results : Array[PolicyCaseResult]
+  passed : Int
+  failed : Int
+} derive(Eq, @debug.Debug)
+pub fn PolicySuiteResult::to_json(Self) -> Json
 
 pub(all) struct Request {
   subject : String
