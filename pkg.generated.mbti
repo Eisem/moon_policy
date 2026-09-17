@@ -114,6 +114,7 @@ pub(all) struct Policy {
 pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_parents? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
 pub fn Policy::access_changes(Self, Self, Array[Request]) -> Array[AccessChange]
 pub fn Policy::authorize(Self, Request) -> Decision
+pub fn Policy::coverage(Self, Array[Request]) -> PolicyCoverage
 pub fn Policy::explain(Self, Request) -> EvaluationReport
 pub fn Policy::run_cases(Self, Array[PolicyCase]) -> PolicySuiteResult
 pub fn Policy::to_json(Self) -> Json
@@ -133,6 +134,16 @@ pub(all) struct PolicyCaseResult {
   decision : Decision
   passed : Bool
 } derive(Eq, @debug.Debug)
+
+pub(all) struct PolicyCoverage {
+  total_requests : Int
+  allowed : Int
+  explicit_denies : Int
+  default_denies : Int
+  rules : Array[RuleCoverage]
+} derive(Eq, @debug.Debug)
+pub fn PolicyCoverage::to_json(Self) -> Json
+pub fn PolicyCoverage::uncovered_rule_ids(Self) -> Array[String]
 
 pub(all) struct PolicyIssue {
   code : String
@@ -174,6 +185,15 @@ pub(all) struct Rule {
   condition : Condition
 } derive(@debug.Debug)
 pub fn Rule::Rule(id~ : String, effect~ : Effect, subject? : Matcher, action? : Matcher, resource? : Matcher, condition? : Condition) -> Self
+
+pub(all) struct RuleCoverage {
+  id : String
+  selector_matches : Int
+  condition_satisfied : Int
+  condition_unsatisfied : Int
+  condition_unknown : Int
+  applied : Int
+} derive(Eq, @debug.Debug)
 
 pub(all) struct RuleEvaluation {
   id : String

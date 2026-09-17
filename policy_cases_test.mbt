@@ -19,17 +19,13 @@ test "policy case runner reports all failures in input order" {
       request=read,
       expected_allowed=true,
     ),
-    @moon_policy.PolicyCase(
-      name="write denied",
-      request=write,
-      expected_allowed=false,
-    ),
-    @moon_policy.PolicyCase(
+    PolicyCase(name="write denied", request=write, expected_allowed=false),
+    PolicyCase(
       name="wrong read expectation",
       request=read,
       expected_allowed=false,
     ),
-    @moon_policy.PolicyCase(
+    PolicyCase(
       name="wrong write expectation",
       request=write,
       expected_allowed=true,

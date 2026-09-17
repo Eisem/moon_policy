@@ -27,6 +27,7 @@ moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","ac
 moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- diff '{"rules":[]}' '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
 moon run --target native cmd/main -- verify '{"rules":[]}' '[{"name":"deny unknown","request":{"subject":"alice","action":"read","resource":"doc:1"},"expected_allowed":false}]'
+moon run --target native cmd/main -- coverage '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
 ```
 
 The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
@@ -121,6 +122,10 @@ JSON array of requests for this workflow.
 `cases_from_json` loads named requests with `expected_allowed` booleans, and
 `policy.run_cases(cases)` checks them all. See `examples/cases.json` for a
 starter policy regression suite.
+`policy.coverage(requests)` summarizes allow and deny outcomes plus per-rule
+selector, condition, and applied counts. `uncovered_rule_ids()` identifies
+rules that the supplied corpus never selected; it does not prove those rules
+are unreachable in all possible requests.
 
 ## JSON policies
 
