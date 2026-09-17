@@ -88,6 +88,10 @@ rejects invalid policy configuration before returning a policy.
 
 `request_from_json` decodes an authorization request, and `decision.to_json()`
 returns `allowed`, `reason`, and the ordered `trace` of matching grants/rules.
+`policy.to_json()` exports a programmatically assembled policy in the same
+format accepted by `policy_from_json`. Validate a policy before persisting it;
+invalid role references, cycles, and malformed conditions are rejected when
+loaded again.
 
 ## JSON policies
 
