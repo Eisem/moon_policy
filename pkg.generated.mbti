@@ -6,8 +6,15 @@ import {
 }
 
 // Values
+pub fn policy_from_json(String) -> Policy raise PolicyParseError
 
 // Errors
+pub(all) suberror PolicyParseError {
+  InvalidJson(String)
+  MissingField(String)
+  ExpectedType(field~ : String, expected~ : String)
+  InvalidEffect(String)
+} derive(Eq, @debug.Debug)
 
 // Types and methods
 pub(all) struct Decision {

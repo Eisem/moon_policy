@@ -21,4 +21,27 @@ test {
 ## Scope
 
 The first release provides programmatic RBAC and explicit allow/deny rules.
-JSON policy files, attribute-based conditions, and CLI tooling are planned next.
+Attribute-based conditions and CLI tooling are planned next.
+
+## JSON policies
+
+`policy_from_json` loads a constrained JSON format. Unknown fields are ignored,
+but invalid required fields are rejected.
+
+```mbt check
+///|
+test {
+  let policy = policy_from_json(
+    (
+      #|{
+      #|  "roles": { "viewer": ["document:read"] },
+      #|  "bindings": [{ "subject": "bob", "role": "viewer" }]
+      #|}
+    ),
+  )
+  let decision = policy.authorize(
+    Request(subject="bob", action="document:read", resource="document:1"),
+  )
+  assert_true(decision.allowed)
+}
+```

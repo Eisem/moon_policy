@@ -1,0 +1,163 @@
+///|
+/// Errors raised while decoding a JSON policy document.
+pub(all) suberror PolicyParseError {
+  InvalidJson(String)
+  MissingField(String)
+  ExpectedType(field~ : String, expected~ : String)
+  InvalidEffect(String)
+} derive(Debug, Eq)
+
+///|
+fn expect_object(
+  value : Json,
+  field~ : String,
+) -> Map[String, Json] raise PolicyParseError {
+  match value {
+    Object(object) => object
+    _ => raise ExpectedType(field~, expected="object")
+  }
+}
+
+///|
+fn expect_array(
+  value : Json,
+  field~ : String,
+) -> Array[Json] raise PolicyParseError {
+  match value {
+    Array(array) => array
+    _ => raise ExpectedType(field~, expected="array")
+  }
+}
+
+///|
+fn expect_string(
+  value : Json,
+  field~ : String,
+) -> String raise PolicyParseError {
+  match value {
+    String(string) => string
+    _ => raise ExpectedType(field~, expected="string")
+  }
+}
+
+///|
+fn required_field(
+  object : Map[String, Json],
+  field : String,
+) -> Json raise PolicyParseError {
+  match object.get(field) {
+    Some(value) => value
+    None => raise MissingField(field)
+  }
+}
+
+///|
+fn decode_permissions(
+  value : Json,
+  field~ : String,
+) -> Array[String] raise PolicyParseError {
+  let permissions = expect_array(value, field~)
+  let decoded : Array[String] = []
+  for permission in permissions {
+    decoded.push(expect_string(permission, field~))
+  }
+  decoded
+}
+
+///|
+fn decode_roles(
+  value : Json,
+) -> Map[String, Array[String]] raise PolicyParseError {
+  let object = expect_object(value, field="roles")
+  let roles : Map[String, Array[String]] = {}
+  for role, permissions in object {
+    roles[role] = decode_permissions(permissions, field="roles." + role)
+  }
+  roles
+}
+
+///|
+fn decode_bindings(value : Json) -> Array[RoleBinding] raise PolicyParseError {
+  let entries = expect_array(value, field="bindings")
+  let bindings : Array[RoleBinding] = []
+  for entry in entries {
+    let object = expect_object(entry, field="bindings[]")
+    bindings.push(
+      RoleBinding(
+        subject=expect_string(
+          required_field(object, "subject"),
+          field="bindings[].subject",
+        ),
+        role=expect_string(
+          required_field(object, "role"),
+          field="bindings[].role",
+        ),
+      ),
+    )
+  }
+  bindings
+}
+
+///|
+fn decode_effect(value : Json) -> Effect raise PolicyParseError {
+  match expect_string(value, field="rules[].effect") {
+    "allow" => Allow
+    "deny" => Deny
+    other => raise InvalidEffect(other)
+  }
+}
+
+///|
+fn decode_optional_matcher(
+  object : Map[String, Json],
+  field : String,
+) -> Matcher raise PolicyParseError {
+  match object.get(field) {
+    None => Any
+    Some(value) => Exact(expect_string(value, field="rules[]." + field))
+  }
+}
+
+///|
+fn decode_rules(value : Json) -> Array[Rule] raise PolicyParseError {
+  let entries = expect_array(value, field="rules")
+  let rules : Array[Rule] = []
+  for entry in entries {
+    let object = expect_object(entry, field="rules[]")
+    rules.push(
+      Rule(
+        id=expect_string(required_field(object, "id"), field="rules[].id"),
+        effect=decode_effect(required_field(object, "effect")),
+        subject=decode_optional_matcher(object, "subject"),
+        action=decode_optional_matcher(object, "action"),
+        resource=decode_optional_matcher(object, "resource"),
+      ),
+    )
+  }
+  rules
+}
+
+///|
+/// Decode the documented JSON representation of a policy.
+///
+/// `roles`, `bindings`, and `rules` are optional. Unknown fields are ignored so
+/// future policy metadata does not change the authorization semantics.
+pub fn policy_from_json(source : String) -> Policy raise PolicyParseError {
+  let root = @json.parse(source) catch {
+    error => raise InvalidJson(error.to_string())
+  }
+  let object = expect_object(root, field="policy")
+  let role_permissions = match object.get("roles") {
+    Some(value) => decode_roles(value)
+    None => {}
+  }
+  let bindings = match object.get("bindings") {
+    Some(value) => decode_bindings(value)
+    None => []
+  }
+  let rules = match object.get("rules") {
+    Some(value) => decode_rules(value)
+    None => []
+  }
+  Policy(role_permissions~, bindings~, rules~)
+}
