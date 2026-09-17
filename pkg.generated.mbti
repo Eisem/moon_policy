@@ -29,10 +29,18 @@ pub(all) enum AttributeValue {
   IntValue(Int)
 } derive(Eq, @debug.Debug)
 
+pub(all) enum Comparison {
+  LessThan
+  LessOrEqual
+  GreaterThan
+  GreaterOrEqual
+} derive(Eq, @debug.Debug)
+
 pub(all) enum Condition {
   Always
   Exists(String)
   Equals(path~ : String, value~ : AttributeValue)
+  Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
   Not(Condition)

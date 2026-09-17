@@ -161,6 +161,63 @@ test "attribute conditions can protect a resource owner" {
 }
 
 ///|
+test "integer comparisons enforce inclusive and exclusive thresholds" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="low-risk",
+      effect=Allow,
+      action=Exact("payment:approve"),
+      condition=AllOf([
+        Compare(path="context.risk", op=GreaterOrEqual, value=0),
+        Compare(path="context.risk", op=LessThan, value=50),
+      ]),
+    ),
+  ])
+  for risk in [0, 49] {
+    let request = @moon_policy.Request(
+      subject="alice",
+      action="payment:approve",
+      resource="payment:1",
+      context={ "risk": IntValue(risk) },
+    )
+    assert_true(policy.authorize(request).allowed)
+  }
+  for risk in [-1, 50] {
+    let request = @moon_policy.Request(
+      subject="alice",
+      action="payment:approve",
+      resource="payment:1",
+      context={ "risk": IntValue(risk) },
+    )
+    assert_true(!policy.authorize(request).allowed)
+  }
+}
+
+///|
+test "integer comparison with missing or mistyped attribute is unknown" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="not-high-risk",
+      effect=Allow,
+      condition=Not(Compare(path="context.risk", op=GreaterThan, value=50)),
+    ),
+  ])
+  let missing = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+  )
+  let mistyped = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+    context={ "risk": StringValue("low") },
+  )
+  assert_true(!policy.authorize(missing).allowed)
+  assert_true(!policy.authorize(mistyped).allowed)
+}
+
+///|
 test "composite conditions fail closed when an attribute is absent" {
   let policy = @moon_policy.Policy(rules=[
     Rule(

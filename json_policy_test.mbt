@@ -48,6 +48,42 @@ test "JSON policy supports inherited roles" {
 }
 
 ///|
+test "JSON policy decodes integer comparisons" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{"rules":[{"id":"threshold","effect":"allow","condition":{"compare":{"path":"context.risk","op":"lte","value":20}}}]}
+    ),
+  )
+  let allowed = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+    context={ "risk": IntValue(20) },
+  )
+  let rejected = @moon_policy.Request(
+    subject="alice",
+    action="read",
+    resource="doc:1",
+    context={ "risk": IntValue(21) },
+  )
+  assert_true(policy.authorize(allowed).allowed)
+  assert_true(!policy.authorize(rejected).allowed)
+}
+
+///|
+test "JSON policy rejects non-integer comparison thresholds" {
+  let source =
+    #|{"rules":[{"id":"threshold","effect":"allow","condition":{"compare":{"path":"context.risk","op":"lte","value":"20"}}}]}
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    ExpectedType(field="rules[].condition.compare.value", expected="integer") =>
+      ()
+    _ => fail("expected an integer type error")
+  } noraise {
+    _ => fail("expected decoding to fail")
+  }
+}
+
+///|
 test "JSON policy rejects cyclic role inheritance" {
   let source =
     #|{"roles":{"a":[],"b":[]},"role_parents":{"a":["b"],"b":["a"]}}

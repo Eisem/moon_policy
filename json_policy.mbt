@@ -132,6 +132,45 @@ fn decode_attribute_value(
 }
 
 ///|
+fn decode_comparison(value : Json) -> Comparison raise PolicyParseError {
+  match expect_string(value, field="rules[].condition.compare.op") {
+    "lt" => LessThan
+    "lte" => LessOrEqual
+    "gt" => GreaterThan
+    "gte" => GreaterOrEqual
+    _ => raise InvalidCondition("compare op must be lt, lte, gt, or gte")
+  }
+}
+
+///|
+fn decode_compare(value : Json) -> Condition raise PolicyParseError {
+  let object = expect_object(value, field="rules[].condition.compare")
+  if object.length() != 3 {
+    raise InvalidCondition("compare requires only path, op, and value")
+  }
+  let threshold = decode_attribute_value(
+    required_field(object, "value"),
+    field="rules[].condition.compare.value",
+  )
+  match threshold {
+    IntValue(value) =>
+      Compare(
+        path=expect_string(
+          required_field(object, "path"),
+          field="rules[].condition.compare.path",
+        ),
+        op=decode_comparison(required_field(object, "op")),
+        value~,
+      )
+    _ =>
+      raise ExpectedType(
+        field="rules[].condition.compare.value",
+        expected="integer",
+      )
+  }
+}
+
+///|
 fn decode_condition(value : Json) -> Condition raise PolicyParseError {
   let object = expect_object(value, field="rules[].condition")
   if object.length() != 1 {
@@ -161,24 +200,31 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
           )
         }
         None =>
-          match object.get("all") {
-            Some(conditions) =>
-              AllOf(
-                decode_conditions(conditions, field="rules[].condition.all"),
-              )
+          match object.get("compare") {
+            Some(compare) => decode_compare(compare)
             None =>
-              match object.get("any") {
+              match object.get("all") {
                 Some(conditions) =>
-                  AnyOf(
-                    decode_conditions(conditions, field="rules[].condition.any"),
+                  AllOf(
+                    decode_conditions(conditions, field="rules[].condition.all"),
                   )
                 None =>
-                  match object.get("not") {
-                    Some(condition) => Not(decode_condition(condition))
-                    None =>
-                      raise InvalidCondition(
-                        "expected exists, equals, all, any, or not",
+                  match object.get("any") {
+                    Some(conditions) =>
+                      AnyOf(
+                        decode_conditions(
+                          conditions,
+                          field="rules[].condition.any",
+                        ),
                       )
+                    None =>
+                      match object.get("not") {
+                        Some(condition) => Not(decode_condition(condition))
+                        None =>
+                          raise InvalidCondition(
+                            "expected exists, equals, compare, all, any, or not",
+                          )
+                      }
                   }
               }
           }

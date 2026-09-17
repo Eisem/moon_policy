@@ -58,8 +58,12 @@ Negating a missing attribute remains unknown rather than becoming true.
 An unknown condition never grants access; on a matching deny rule it denies
 conservatively.
 
-The JSON format expresses conditions as `exists`, `equals`, `all`, `any`, and
-`not` objects. Attribute values can be strings, booleans, or integers.
+The JSON format expresses conditions as `exists`, `equals`, `compare`, `all`,
+`any`, and `not` objects. Integer thresholds use
+`{ "compare": { "path": "context.risk", "op": "lte", "value": 20 } }`;
+`op` may be `lt`, `lte`, `gt`, or `gte`. Missing or non-integer attributes are
+unknown and never satisfy an allow condition, even under `not`. Attribute
+values can be strings, booleans, or integers.
 Call `policy.validate()` for structured configuration diagnostics. JSON loading
 rejects invalid policy configuration before returning a policy.
 

@@ -35,7 +35,7 @@ fn validate_condition(
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
-    Equals(path~, ..) =>
+    Equals(path~, ..) | Compare(path~, ..) =>
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }

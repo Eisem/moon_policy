@@ -22,11 +22,21 @@ pub(all) enum AttributeValue {
 } derive(Debug, Eq)
 
 ///|
+/// An integer threshold comparison for an attribute condition.
+pub(all) enum Comparison {
+  LessThan
+  LessOrEqual
+  GreaterThan
+  GreaterOrEqual
+} derive(Debug, Eq)
+
+///|
 /// A condition attached to an explicit rule.
 pub(all) enum Condition {
   Always
   Exists(String)
   Equals(path~ : String, value~ : AttributeValue)
+  Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
   Not(Condition)
@@ -244,6 +254,24 @@ fn evaluate_condition(
               _ => ConditionUnknown
             }
           }
+      }
+    Compare(path~, op~, value~) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(IntValue(actual)) => {
+          let matched = match op {
+            LessThan => actual < value
+            LessOrEqual => actual <= value
+            GreaterThan => actual > value
+            GreaterOrEqual => actual >= value
+          }
+          if matched {
+            ConditionTrue
+          } else {
+            ConditionFalse
+          }
+        }
+        Some(_) => ConditionUnknown
       }
     AllOf(conditions) => {
       let mut unknown = false
