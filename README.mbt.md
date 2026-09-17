@@ -34,6 +34,19 @@ fixtures for integration tests and future file-input support.
 For exit-code-sensitive automation, run the built native executable directly.
 The installed June 2026 `moon run` wrapper returns 0 even when this CLI exits 1.
 
+## Development checks
+
+GitHub Actions checks formatting, generated interfaces, builds, and tests on
+the Wasm, Wasm GC, JavaScript, and native backends. Run the same checks locally:
+
+```sh
+moon fmt --check
+moon info
+moon check --target all
+moon build --target all
+moon test --target all
+```
+
 ## Scope
 
 The current version provides RBAC with role inheritance, attribute conditions,
