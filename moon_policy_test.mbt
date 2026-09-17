@@ -106,6 +106,17 @@ test "glob matching supports Unicode scalar values" {
 }
 
 ///|
+test "glob matching handles dense wildcard patterns" {
+  let pattern = "*a*a*a*a*a*a*a*a*a*a*z"
+  let value = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaz"
+  assert_true(@moon_policy.glob_matches(pattern, value))
+  assert_true(!@moon_policy.glob_matches(pattern, value + "x"))
+  assert_true(@moon_policy.glob_matches("", ""))
+  assert_true(!@moon_policy.glob_matches("", "x"))
+  assert_true(@moon_policy.glob_matches("*", ""))
+}
+
+///|
 test "attribute conditions can protect a resource owner" {
   let policy = @moon_policy.Policy(rules=[
     Rule(

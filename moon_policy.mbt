@@ -147,41 +147,35 @@ fn matcher_matches(matcher : Matcher, value : String) -> Bool {
 }
 
 ///|
-fn glob_matches_from(
-  pattern : Array[Char],
-  pattern_index : Int,
-  value : Array[Char],
-  value_index : Int,
-) -> Bool {
-  if pattern_index == pattern.length() {
-    return value_index == value.length()
-  }
-  match pattern[pattern_index] {
-    '*' => {
-      for candidate in value_index..<=value.length() {
-        if glob_matches_from(pattern, pattern_index + 1, value, candidate) {
-          return true
-        }
-      }
-      false
-    }
-    '?' =>
-      value_index < value.length() &&
-      glob_matches_from(pattern, pattern_index + 1, value, value_index + 1)
-    character =>
-      value_index < value.length() &&
-      value[value_index] == character &&
-      glob_matches_from(pattern, pattern_index + 1, value, value_index + 1)
-  }
-}
-
-///|
 /// Match a value against a glob pattern. `*` matches zero or more characters
-/// and `?` matches exactly one Unicode scalar value.
+/// and `?` matches exactly one Unicode scalar value. Runtime is bounded by
+/// O(pattern length * value length) with O(value length) working memory.
 pub fn glob_matches(pattern : String, value : String) -> Bool {
   let pattern_chars : Array[Char] = [ for character in pattern => character ]
   let value_chars : Array[Char] = [ for character in value => character ]
-  glob_matches_from(pattern_chars, 0, value_chars, 0)
+  let pattern_length = pattern_chars.length()
+  let value_length = value_chars.length()
+  let mut next = Array::make(value_length + 1, false)
+  next[value_length] = true
+  for pattern_offset in 0..<pattern_length {
+    let pattern_index = pattern_length - 1 - pattern_offset
+    let current = Array::make(value_length + 1, false)
+    for value_offset in 0..<=value_length {
+      let value_index = value_length - value_offset
+      current[value_index] = match pattern_chars[pattern_index] {
+        '*' =>
+          next[value_index] ||
+          (value_index < value_length && current[value_index + 1])
+        '?' => value_index < value_length && next[value_index + 1]
+        character =>
+          value_index < value_length &&
+          value_chars[value_index] == character &&
+          next[value_index + 1]
+      }
+    }
+    next = current
+  }
+  next[0]
 }
 
 ///|
