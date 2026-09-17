@@ -69,3 +69,38 @@ test "an explicit allow matches all subjects when subject is omitted" {
   assert_true(decision.reason is Allowed)
   assert_true(decision.trace == ["rule:public-read"])
 }
+
+///|
+test "glob matchers support HTTP-like resource paths" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="project-read",
+      effect=Allow,
+      action=Glob("project:read:*"),
+      resource=Glob("/projects/*/documents/?"),
+    ),
+  ])
+  let allowed = policy.authorize(
+    Request(
+      subject="alice",
+      action="project:read:metadata",
+      resource="/projects/moon-policy/documents/a",
+    ),
+  )
+  let rejected = policy.authorize(
+    Request(
+      subject="alice",
+      action="project:write:metadata",
+      resource="/projects/moon-policy/documents/a",
+    ),
+  )
+  assert_true(allowed.allowed)
+  assert_true(!rejected.allowed)
+}
+
+///|
+test "glob matching supports Unicode scalar values" {
+  assert_true(@moon_policy.glob_matches("文?", "文档"))
+  assert_true(@moon_policy.glob_matches("项目/*", "项目/moon-policy"))
+  assert_true(!@moon_policy.glob_matches("文?", "文章库"))
+}

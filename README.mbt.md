@@ -23,6 +23,10 @@ test {
 The first release provides programmatic RBAC and explicit allow/deny rules.
 Attribute-based conditions and CLI tooling are planned next.
 
+Rules can use `Glob("...")` where `*` matches any sequence and `?` matches
+one Unicode character. This is useful for HTTP-like resources and namespaced
+actions such as `project:read:*`.
+
 ## JSON policies
 
 `policy_from_json` loads a constrained JSON format. Unknown fields are ignored,

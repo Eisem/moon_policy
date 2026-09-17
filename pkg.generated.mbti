@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn glob_matches(String, String) -> Bool
+
 pub fn policy_from_json(String) -> Policy raise PolicyParseError
 
 // Errors
@@ -37,6 +39,7 @@ pub(all) enum Effect {
 pub(all) enum Matcher {
   Any
   Exact(String)
+  Glob(String)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Policy {

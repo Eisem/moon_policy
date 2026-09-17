@@ -10,6 +10,7 @@ pub(all) enum Effect {
 pub(all) enum Matcher {
   Any
   Exact(String)
+  Glob(String)
 } derive(Debug, Eq)
 
 ///|
@@ -107,7 +108,46 @@ fn matcher_matches(matcher : Matcher, value : String) -> Bool {
   match matcher {
     Any => true
     Exact(expected) => expected == value
+    Glob(pattern) => glob_matches(pattern, value)
   }
+}
+
+///|
+fn glob_matches_from(
+  pattern : Array[Char],
+  pattern_index : Int,
+  value : Array[Char],
+  value_index : Int,
+) -> Bool {
+  if pattern_index == pattern.length() {
+    return value_index == value.length()
+  }
+  match pattern[pattern_index] {
+    '*' => {
+      for candidate in value_index..<=value.length() {
+        if glob_matches_from(pattern, pattern_index + 1, value, candidate) {
+          return true
+        }
+      }
+      false
+    }
+    '?' =>
+      value_index < value.length() &&
+      glob_matches_from(pattern, pattern_index + 1, value, value_index + 1)
+    character =>
+      value_index < value.length() &&
+      value[value_index] == character &&
+      glob_matches_from(pattern, pattern_index + 1, value, value_index + 1)
+  }
+}
+
+///|
+/// Match a value against a glob pattern. `*` matches zero or more characters
+/// and `?` matches exactly one Unicode scalar value.
+pub fn glob_matches(pattern : String, value : String) -> Bool {
+  let pattern_chars : Array[Char] = [ for character in pattern => character ]
+  let value_chars : Array[Char] = [ for character in value => character ]
+  glob_matches_from(pattern_chars, 0, value_chars, 0)
 }
 
 ///|
