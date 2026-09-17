@@ -104,3 +104,63 @@ test "glob matching supports Unicode scalar values" {
   assert_true(@moon_policy.glob_matches("项目/*", "项目/moon-policy"))
   assert_true(!@moon_policy.glob_matches("文?", "文章库"))
 }
+
+///|
+test "attribute conditions can protect a resource owner" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="owner-write",
+      effect=Allow,
+      action=Exact("document:write"),
+      condition=Equals(path="subject.team", value=StringValue("platform")),
+    ),
+  ])
+  let platform_request = @moon_policy.Request(
+    subject="alice",
+    action="document:write",
+    resource="document:42",
+    subject_attributes={ "team": StringValue("platform") },
+  )
+  let other_request = @moon_policy.Request(
+    subject="bob",
+    action="document:write",
+    resource="document:42",
+    subject_attributes={ "team": StringValue("product") },
+  )
+  assert_true(policy.authorize(platform_request).allowed)
+  assert_true(!policy.authorize(other_request).allowed)
+}
+
+///|
+test "composite conditions fail closed when an attribute is absent" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="office-hours-admin",
+      effect=Allow,
+      action=Exact("admin:read"),
+      condition=AllOf([
+        Exists("context.request_id"),
+        AnyOf([
+          Equals(path="subject.role", value=StringValue("operator")),
+          Equals(path="subject.role", value=StringValue("admin")),
+        ]),
+        Not(Equals(path="context.blocked", value=BoolValue(true))),
+      ]),
+    ),
+  ])
+  let valid = @moon_policy.Request(
+    subject="alice",
+    action="admin:read",
+    resource="admin:reports",
+    subject_attributes={ "role": StringValue("operator") },
+    context={ "request_id": StringValue("req-1"), "blocked": BoolValue(false) },
+  )
+  let missing_context = @moon_policy.Request(
+    subject="alice",
+    action="admin:read",
+    resource="admin:reports",
+    subject_attributes={ "role": StringValue("operator") },
+  )
+  assert_true(policy.authorize(valid).allowed)
+  assert_true(!policy.authorize(missing_context).allowed)
+}

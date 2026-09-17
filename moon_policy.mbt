@@ -14,6 +14,25 @@ pub(all) enum Matcher {
 } derive(Debug, Eq)
 
 ///|
+/// A scalar attribute supplied by the caller for attribute-based authorization.
+pub(all) enum AttributeValue {
+  StringValue(String)
+  BoolValue(Bool)
+  IntValue(Int)
+} derive(Debug, Eq)
+
+///|
+/// A condition attached to an explicit rule.
+pub(all) enum Condition {
+  Always
+  Exists(String)
+  Equals(path~ : String, value~ : AttributeValue)
+  AllOf(Array[Condition])
+  AnyOf(Array[Condition])
+  Not(Condition)
+} derive(Debug, Eq)
+
+///|
 /// A single explicit policy rule.
 pub(all) struct Rule {
   id : String
@@ -21,6 +40,7 @@ pub(all) struct Rule {
   subject : Matcher
   action : Matcher
   resource : Matcher
+  condition : Condition
 } derive(Debug)
 
 ///|
@@ -31,8 +51,9 @@ pub fn Rule::Rule(
   subject? : Matcher = Any,
   action? : Matcher = Any,
   resource? : Matcher = Any,
+  condition? : Condition = Always,
 ) -> Rule {
-  { id, effect, subject, action, resource }
+  { id, effect, subject, action, resource, condition }
 }
 
 ///|
@@ -57,6 +78,9 @@ pub(all) struct Request {
   subject : String
   action : String
   resource : String
+  subject_attributes : Map[String, AttributeValue]
+  resource_attributes : Map[String, AttributeValue]
+  context : Map[String, AttributeValue]
 } derive(Debug, Eq)
 
 ///|
@@ -65,8 +89,18 @@ pub fn Request::Request(
   subject~ : String,
   action~ : String,
   resource~ : String,
+  subject_attributes? : Map[String, AttributeValue] = {},
+  resource_attributes? : Map[String, AttributeValue] = {},
+  context? : Map[String, AttributeValue] = {},
 ) -> Request {
-  { subject, action, resource }
+  {
+    subject,
+    action,
+    resource,
+    subject_attributes,
+    resource_attributes,
+    context,
+  }
 }
 
 ///|
@@ -154,7 +188,50 @@ pub fn glob_matches(pattern : String, value : String) -> Bool {
 fn rule_matches(rule : Rule, request : Request) -> Bool {
   matcher_matches(rule.subject, request.subject) &&
   matcher_matches(rule.action, request.action) &&
-  matcher_matches(rule.resource, request.resource)
+  matcher_matches(rule.resource, request.resource) &&
+  condition_matches(rule.condition, request)
+}
+
+///|
+fn resolve_attribute(request : Request, path : String) -> AttributeValue? {
+  let parts = path.split(".").to_array()
+  if parts.length() != 2 {
+    return None
+  }
+  match (parts[0], parts[1]) {
+    ("subject", "id") => Some(StringValue(request.subject))
+    ("resource", "id") => Some(StringValue(request.resource))
+    ("subject", key) => request.subject_attributes.get(key.to_owned())
+    ("resource", key) => request.resource_attributes.get(key.to_owned())
+    ("context", key) => request.context.get(key.to_owned())
+    _ => None
+  }
+}
+
+///|
+fn condition_matches(condition : Condition, request : Request) -> Bool {
+  match condition {
+    Always => true
+    Exists(path) => resolve_attribute(request, path) is Some(_)
+    Equals(path~, value~) => resolve_attribute(request, path) == Some(value)
+    AllOf(conditions) => {
+      for condition in conditions {
+        if !condition_matches(condition, request) {
+          return false
+        }
+      }
+      true
+    }
+    AnyOf(conditions) => {
+      for condition in conditions {
+        if condition_matches(condition, request) {
+          return true
+        }
+      }
+      false
+    }
+    Not(condition) => !condition_matches(condition, request)
+  }
 }
 
 ///|

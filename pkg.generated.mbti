@@ -19,6 +19,21 @@ pub(all) suberror PolicyParseError {
 } derive(Eq, @debug.Debug)
 
 // Types and methods
+pub(all) enum AttributeValue {
+  StringValue(String)
+  BoolValue(Bool)
+  IntValue(Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Condition {
+  Always
+  Exists(String)
+  Equals(path~ : String, value~ : AttributeValue)
+  AllOf(Array[Condition])
+  AnyOf(Array[Condition])
+  Not(Condition)
+} derive(Eq, @debug.Debug)
+
 pub(all) struct Decision {
   allowed : Bool
   reason : DecisionReason
@@ -54,8 +69,11 @@ pub(all) struct Request {
   subject : String
   action : String
   resource : String
+  subject_attributes : Map[String, AttributeValue]
+  resource_attributes : Map[String, AttributeValue]
+  context : Map[String, AttributeValue]
 } derive(Eq, @debug.Debug)
-pub fn Request::Request(subject~ : String, action~ : String, resource~ : String) -> Self
+pub fn Request::Request(subject~ : String, action~ : String, resource~ : String, subject_attributes? : Map[String, AttributeValue], resource_attributes? : Map[String, AttributeValue], context? : Map[String, AttributeValue]) -> Self
 
 pub(all) struct RoleBinding {
   subject : String
@@ -69,8 +87,9 @@ pub(all) struct Rule {
   subject : Matcher
   action : Matcher
   resource : Matcher
+  condition : Condition
 } derive(@debug.Debug)
-pub fn Rule::Rule(id~ : String, effect~ : Effect, subject? : Matcher, action? : Matcher, resource? : Matcher) -> Self
+pub fn Rule::Rule(id~ : String, effect~ : Effect, subject? : Matcher, action? : Matcher, resource? : Matcher, condition? : Condition) -> Self
 
 // Type aliases
 
