@@ -56,6 +56,31 @@ fn validate_condition(
 }
 
 ///|
+fn role_has_cycle(
+  policy : Policy,
+  role : String,
+  states : Map[String, Int],
+) -> Bool {
+  match states.get(role) {
+    Some(1) => return true
+    Some(2) => return false
+    _ => ()
+  }
+  states[role] = 1
+  match policy.role_parents.get(role) {
+    Some(parents) =>
+      for parent in parents {
+        if role_has_cycle(policy, parent, states) {
+          return true
+        }
+      }
+    None => ()
+  }
+  states[role] = 2
+  false
+}
+
+///|
 /// Check a policy for ambiguous or broken configuration before evaluating it.
 /// The returned issues are ordered by role, binding, and then rule order.
 pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
@@ -74,6 +99,29 @@ pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
           ),
         )
       }
+    }
+  }
+  for role, parents in self.role_parents {
+    if !self.role_permissions.contains(role) {
+      issues.push(policy_issue("unknown_role", "role_parents." + role, role))
+    }
+    for index, parent in parents {
+      if !self.role_permissions.contains(parent) {
+        issues.push(
+          policy_issue(
+            "unknown_parent_role",
+            "role_parents." + role + "." + index.to_string(),
+            parent,
+          ),
+        )
+      }
+    }
+  }
+  let role_states : Map[String, Int] = {}
+  for role, _ in self.role_permissions {
+    if role_has_cycle(self, role, role_states) {
+      issues.push(policy_issue("role_inheritance_cycle", "role_parents", role))
+      break
     }
   }
   let bindings_seen : Map[String, Bool] = {}

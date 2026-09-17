@@ -30,6 +30,37 @@ test "JSON policy combines role grants and explicit rules" {
 }
 
 ///|
+test "JSON policy supports inherited roles" {
+  let policy = @moon_policy.policy_from_json(
+    (
+      #|{
+      #|  "roles": { "viewer": ["document:read"], "admin": [] },
+      #|  "role_parents": { "admin": ["viewer"] },
+      #|  "bindings": [{ "subject": "alice", "role": "admin" }]
+      #|}
+    ),
+  )
+  let decision = policy.authorize(
+    Request(subject="alice", action="document:read", resource="document:1"),
+  )
+  assert_true(decision.allowed)
+  assert_true(decision.trace == ["role:viewer:document:read"])
+}
+
+///|
+test "JSON policy rejects cyclic role inheritance" {
+  let source =
+    #|{"roles":{"a":[],"b":[]},"role_parents":{"a":["b"],"b":["a"]}}
+  try ignore(@moon_policy.policy_from_json(source)) catch {
+    InvalidPolicy(message) =>
+      assert_true(message.contains("role_inheritance_cycle"))
+    _ => fail("expected a validation error")
+  } noraise {
+    _ => fail("expected JSON decoding to fail")
+  }
+}
+
+///|
 test "JSON policy rejects unknown effects" {
   try
     ignore(

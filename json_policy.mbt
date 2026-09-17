@@ -69,11 +69,12 @@ fn decode_permissions(
 ///|
 fn decode_roles(
   value : Json,
+  field~ : String,
 ) -> Map[String, Array[String]] raise PolicyParseError {
-  let object = expect_object(value, field="roles")
+  let object = expect_object(value, field~)
   let roles : Map[String, Array[String]] = {}
   for role, permissions in object {
-    roles[role] = decode_permissions(permissions, field="roles." + role)
+    roles[role] = decode_permissions(permissions, field=field + "." + role)
   }
   roles
 }
@@ -268,7 +269,11 @@ pub fn policy_from_json(source : String) -> Policy raise PolicyParseError {
   }
   let object = expect_object(root, field="policy")
   let role_permissions = match object.get("roles") {
-    Some(value) => decode_roles(value)
+    Some(value) => decode_roles(value, field="roles")
+    None => {}
+  }
+  let role_parents = match object.get("role_parents") {
+    Some(value) => decode_roles(value, field="role_parents")
     None => {}
   }
   let bindings = match object.get("bindings") {
@@ -279,7 +284,7 @@ pub fn policy_from_json(source : String) -> Policy raise PolicyParseError {
     Some(value) => decode_rules(value)
     None => []
   }
-  let policy = Policy(role_permissions~, bindings~, rules~)
+  let policy = Policy(role_permissions~, role_parents~, bindings~, rules~)
   let issues = policy.validate()
   if issues.length() > 0 {
     raise InvalidPolicy(issues[0].code + " at " + issues[0].location)

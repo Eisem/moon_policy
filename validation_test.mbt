@@ -40,3 +40,16 @@ test "a valid policy has no diagnostics" {
   )
   assert_true(policy.validate() == [])
 }
+
+///|
+test "role inheritance rejects unknown parent and cycles" {
+  let unknown = @moon_policy.Policy(role_permissions={ "admin": [] }, role_parents={
+    "admin": ["missing"],
+  })
+  assert_eq(unknown.validate()[0].code, "unknown_parent_role")
+  let cyclic = @moon_policy.Policy(
+    role_permissions={ "admin": [], "editor": [] },
+    role_parents={ "admin": ["editor"], "editor": ["admin"] },
+  )
+  assert_eq(cyclic.validate()[0].code, "role_inheritance_cycle")
+}

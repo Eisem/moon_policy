@@ -64,10 +64,11 @@ pub(all) enum Matcher {
 
 pub(all) struct Policy {
   role_permissions : Map[String, Array[String]]
+  role_parents : Map[String, Array[String]]
   bindings : Array[RoleBinding]
   rules : Array[Rule]
 } derive(@debug.Debug)
-pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
+pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_parents? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
 pub fn Policy::authorize(Self, Request) -> Decision
 pub fn Policy::validate(Self) -> Array[PolicyIssue]
 

@@ -36,8 +36,14 @@ The installed June 2026 `moon run` wrapper returns 0 even when this CLI exits 1.
 
 ## Scope
 
-The current version provides RBAC, attribute conditions, explicit allow/deny
-rules, JSON policy/request parsing, and a native CLI.
+The current version provides RBAC with role inheritance, attribute conditions,
+explicit allow/deny rules, JSON policy/request parsing, and a native CLI.
+
+Roles can inherit permissions transitively. For example, define
+`"role_parents": { "admin": ["editor"] }` alongside `roles` in JSON, or pass
+`role_parents={ "admin": ["editor"] }` to `Policy`. Every referenced role must
+be declared in `roles`; cycles are rejected during validation. Inherited grants
+appear in the decision trace under the role that owns the permission.
 
 Rules can use `Glob("...")` where `*` matches any sequence and `?` matches
 one Unicode character. This is useful for HTTP-like resources and namespaced

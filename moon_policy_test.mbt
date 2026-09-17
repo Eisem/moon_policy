@@ -13,6 +13,24 @@ test "role grant allows a matching action" {
 }
 
 ///|
+test "role inheritance grants transitive permissions once" {
+  let policy = @moon_policy.Policy(
+    role_permissions={
+      "viewer": ["document:read"],
+      "editor": ["document:write"],
+      "admin": [],
+    },
+    role_parents={ "admin": ["editor", "viewer"], "editor": ["viewer"] },
+    bindings=[RoleBinding(subject="alice", role="admin")],
+  )
+  let decision = policy.authorize(
+    Request(subject="alice", action="document:read", resource="document:1"),
+  )
+  assert_true(decision.allowed)
+  assert_true(decision.trace == ["role:viewer:document:read"])
+}
+
+///|
 test "policy denies requests without an explicit grant" {
   let decision = @moon_policy.Policy().authorize(
     Request(subject="alice", action="document:read", resource="document:42"),

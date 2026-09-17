@@ -123,6 +123,7 @@ pub(all) struct Decision {
 /// An immutable policy assembled from role grants, bindings, and explicit rules.
 pub(all) struct Policy {
   role_permissions : Map[String, Array[String]]
+  role_parents : Map[String, Array[String]]
   bindings : Array[RoleBinding]
   rules : Array[Rule]
 } derive(Debug)
@@ -131,10 +132,11 @@ pub(all) struct Policy {
 /// Create a policy. The evaluator is deny-by-default and explicit denies win.
 pub fn Policy::Policy(
   role_permissions? : Map[String, Array[String]] = {},
+  role_parents? : Map[String, Array[String]] = {},
   bindings? : Array[RoleBinding] = [],
   rules? : Array[Rule] = [],
 ) -> Policy {
-  { role_permissions, bindings, rules }
+  { role_permissions, role_parents, bindings, rules }
 }
 
 ///|
@@ -289,19 +291,54 @@ fn role_grants(
   trace : Array[String],
 ) -> Bool {
   let mut granted = false
+  let visited : Map[String, Bool] = {}
   for binding in policy.bindings {
     if binding.subject == request.subject {
-      match policy.role_permissions.get(binding.role) {
-        Some(permissions) =>
-          for permission in permissions {
-            if permission == "*" || permission == request.action {
-              granted = true
-              trace.push("role:" + binding.role + ":" + permission)
-            }
-          }
-        None => ()
+      if role_grants_recursive(
+          policy,
+          binding.role,
+          request.action,
+          visited,
+          trace,
+        ) {
+        granted = true
       }
     }
+  }
+  granted
+}
+
+///|
+fn role_grants_recursive(
+  policy : Policy,
+  role : String,
+  action : String,
+  visited : Map[String, Bool],
+  trace : Array[String],
+) -> Bool {
+  if visited.contains(role) {
+    return false
+  }
+  visited[role] = true
+  let mut granted = false
+  match policy.role_permissions.get(role) {
+    Some(permissions) =>
+      for permission in permissions {
+        if permission == "*" || permission == action {
+          trace.push("role:" + role + ":" + permission)
+          granted = true
+        }
+      }
+    None => ()
+  }
+  match policy.role_parents.get(role) {
+    Some(parents) =>
+      for parent in parents {
+        if role_grants_recursive(policy, parent, action, visited, trace) {
+          granted = true
+        }
+      }
+    None => ()
   }
   granted
 }
