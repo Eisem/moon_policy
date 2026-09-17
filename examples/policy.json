@@ -1,0 +1,10 @@
+{
+  "roles": { "editor": ["document:read", "document:write"] },
+  "bindings": [{ "subject": "alice", "role": "editor" }],
+  "rules": [{
+    "id": "locked-documents",
+    "effect": "deny",
+    "action": "document:write",
+    "condition": { "equals": { "path": "resource.locked", "value": true } }
+  }]
+}

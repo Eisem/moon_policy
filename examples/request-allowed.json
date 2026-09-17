@@ -1,0 +1,6 @@
+{
+  "subject": "alice",
+  "action": "document:write",
+  "resource": "document:42",
+  "resource_attributes": { "locked": false }
+}

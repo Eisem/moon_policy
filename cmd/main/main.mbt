@@ -1,15 +1,59 @@
 ///|
-/// Entry point for the CLI or runnable program in this template.
-/// Keep main focused; move logic into the library package.
-/// Run with `moon run cmd/main` from the project root.
+/// Run `moon run --target native cmd/main -- demo` for a self-contained example.
 fn main {
-  let policy = @policy.Policy(
-    role_permissions={ "editor": ["document:read"] },
-    bindings=[RoleBinding(subject="alice", role="editor")],
-  )
-  let decision = policy.authorize(
-    Request(subject="alice", action="document:read", resource="document:demo"),
-  )
-  println("allowed: \{decision.allowed}")
-  println("reason: \{to_repr(decision.reason)}")
+  let process_args = @env.args()
+  let user_args = [
+    for index in 1..<process_args.length() => process_args[index]
+  ]
+  let exit_code = run_cli(user_args) catch {
+    error => {
+      println("error: \{to_repr(error)}")
+      2
+    }
+  }
+  cli_exit(exit_code)
+}
+
+///|
+extern "C" fn cli_exit(code : Int) = "exit"
+
+///|
+fn run_cli(args : Array[String]) -> Int raise {
+  if args.length() == 1 && args[0] == "check" {
+    println("usage: moon-policy check POLICY_JSON")
+    return 2
+  }
+  if args.length() == 2 && args[0] == "check" {
+    let policy = @policy.policy_from_json(args[1])
+    let issues = policy.validate()
+    if issues.length() == 0 {
+      println("valid")
+      return 0
+    }
+    println("invalid policy")
+    return 2
+  }
+  if args.length() == 3 && (args[0] == "eval" || args[0] == "explain") {
+    let policy = @policy.policy_from_json(args[1])
+    let request = @policy.request_from_json(args[2])
+    let decision = policy.authorize(request)
+    println(decision.to_json().stringify())
+    return if decision.allowed { 0 } else { 1 }
+  }
+  if args.length() == 1 && args[0] == "demo" {
+    let policy = @policy.policy_from_json(
+      "{\"roles\":{\"editor\":[\"document:read\"]},\"bindings\":[{\"subject\":\"alice\",\"role\":\"editor\"}]}",
+    )
+    let request = @policy.request_from_json(
+      "{\"subject\":\"alice\",\"action\":\"document:read\",\"resource\":\"document:demo\"}",
+    )
+    let decision = policy.authorize(request)
+    println(decision.to_json().stringify())
+    return if decision.allowed { 0 } else { 1 }
+  }
+  println("usage: moon-policy check POLICY_JSON")
+  println("       moon-policy eval POLICY_JSON REQUEST_JSON")
+  println("       moon-policy explain POLICY_JSON REQUEST_JSON")
+  println("       moon-policy demo")
+  2
 }

@@ -18,10 +18,26 @@ test {
 }
 ```
 
+## Native CLI
+
+```sh
+moon run --target native cmd/main -- demo
+moon run --target native cmd/main -- check '{"rules":[]}'
+moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
+```
+
+The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
+decision, and 2 for an invalid command, policy, or request. JSON is passed as
+command-line text. The `examples/` directory also contains policy and request
+fixtures for integration tests and future file-input support.
+
+For exit-code-sensitive automation, run the built native executable directly.
+The installed June 2026 `moon run` wrapper returns 0 even when this CLI exits 1.
+
 ## Scope
 
-The first release provides programmatic RBAC and explicit allow/deny rules.
-Attribute-based conditions and CLI tooling are planned next.
+The current version provides RBAC, attribute conditions, explicit allow/deny
+rules, JSON policy/request parsing, and a native CLI.
 
 Rules can use `Glob("...")` where `*` matches any sequence and `?` matches
 one Unicode character. This is useful for HTTP-like resources and namespaced
