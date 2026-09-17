@@ -30,6 +30,9 @@ actions such as `project:read:*`.
 Rules may also require scalar attributes under `subject.<key>`,
 `resource.<key>`, or `context.<key>`. Missing attributes never satisfy an
 `Equals` or `Exists` condition, so evaluation remains fail-closed.
+Negating a missing attribute remains unknown rather than becoming true.
+An unknown condition never grants access; on a matching deny rule it denies
+conservatively.
 
 The JSON format expresses conditions as `exists`, `equals`, `all`, `any`, and
 `not` objects. Attribute values can be strings, booleans, or integers.

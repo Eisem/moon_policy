@@ -164,3 +164,50 @@ test "composite conditions fail closed when an attribute is absent" {
   assert_true(policy.authorize(valid).allowed)
   assert_true(!policy.authorize(missing_context).allowed)
 }
+
+///|
+test "negating a missing attribute does not grant access" {
+  let policy = @moon_policy.Policy(rules=[
+    Rule(
+      id="not-blocked",
+      effect=Allow,
+      condition=Not(Equals(path="context.blocked", value=BoolValue(true))),
+    ),
+  ])
+  let missing = @moon_policy.Request(
+    subject="alice",
+    action="document:read",
+    resource="document:1",
+  )
+  let present = @moon_policy.Request(
+    subject="alice",
+    action="document:read",
+    resource="document:1",
+    context={ "blocked": BoolValue(false) },
+  )
+  assert_true(!policy.authorize(missing).allowed)
+  assert_true(policy.authorize(present).allowed)
+}
+
+///|
+test "uncertain deny condition overrides a role grant" {
+  let policy = @moon_policy.Policy(
+    role_permissions={ "reader": ["document:read"] },
+    bindings=[RoleBinding(subject="alice", role="reader")],
+    rules=[
+      Rule(
+        id="requires-clearance",
+        effect=Deny,
+        condition=Not(Equals(path="subject.clearance", value=StringValue("ok"))),
+      ),
+    ],
+  )
+  let request = @moon_policy.Request(
+    subject="alice",
+    action="document:read",
+    resource="document:1",
+  )
+  let decision = policy.authorize(request)
+  assert_true(!decision.allowed)
+  assert_true(decision.reason is ExplicitDeny)
+}

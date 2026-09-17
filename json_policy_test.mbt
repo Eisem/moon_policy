@@ -114,12 +114,9 @@ test "JSON policy preserves integer attribute values" {
     ),
   )
   let decision = policy.authorize(
-    Request(
-      subject="alice",
-      action="document:read",
-      resource="document:1",
-      subject_attributes={ "level": IntValue(3) },
-    ),
+    Request(subject="alice", action="document:read", resource="document:1", subject_attributes={
+      "level": IntValue(3),
+    }),
   )
   assert_true(decision.allowed)
 }

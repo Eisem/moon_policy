@@ -16,6 +16,7 @@ pub(all) suberror PolicyParseError {
   MissingField(String)
   ExpectedType(field~ : String, expected~ : String)
   InvalidEffect(String)
+  InvalidCondition(String)
 } derive(Eq, @debug.Debug)
 
 // Types and methods

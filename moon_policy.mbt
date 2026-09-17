@@ -186,10 +186,23 @@ pub fn glob_matches(pattern : String, value : String) -> Bool {
 
 ///|
 fn rule_matches(rule : Rule, request : Request) -> Bool {
-  matcher_matches(rule.subject, request.subject) &&
-  matcher_matches(rule.action, request.action) &&
-  matcher_matches(rule.resource, request.resource) &&
-  condition_matches(rule.condition, request)
+  if !(matcher_matches(rule.subject, request.subject) &&
+    matcher_matches(rule.action, request.action) &&
+    matcher_matches(rule.resource, request.resource)) {
+    return false
+  }
+  match (rule.effect, evaluate_condition(rule.condition, request)) {
+    (_, ConditionTrue) => true
+    (Deny, ConditionUnknown) => true
+    _ => false
+  }
+}
+
+///|
+priv enum ConditionResult {
+  ConditionTrue
+  ConditionFalse
+  ConditionUnknown
 }
 
 ///|
@@ -209,28 +222,69 @@ fn resolve_attribute(request : Request, path : String) -> AttributeValue? {
 }
 
 ///|
-fn condition_matches(condition : Condition, request : Request) -> Bool {
+fn evaluate_condition(
+  condition : Condition,
+  request : Request,
+) -> ConditionResult {
   match condition {
-    Always => true
-    Exists(path) => resolve_attribute(request, path) is Some(_)
-    Equals(path~, value~) => resolve_attribute(request, path) == Some(value)
+    Always => ConditionTrue
+    Exists(path) =>
+      if resolve_attribute(request, path) is Some(_) {
+        ConditionTrue
+      } else {
+        ConditionUnknown
+      }
+    Equals(path~, value~) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(actual) =>
+          if actual == value {
+            ConditionTrue
+          } else {
+            match (actual, value) {
+              (StringValue(_), StringValue(_))
+              | (BoolValue(_), BoolValue(_))
+              | (IntValue(_), IntValue(_)) => ConditionFalse
+              _ => ConditionUnknown
+            }
+          }
+      }
     AllOf(conditions) => {
+      let mut unknown = false
       for condition in conditions {
-        if !condition_matches(condition, request) {
-          return false
+        match evaluate_condition(condition, request) {
+          ConditionFalse => return ConditionFalse
+          ConditionUnknown => unknown = true
+          ConditionTrue => ()
         }
       }
-      true
+      if unknown {
+        ConditionUnknown
+      } else {
+        ConditionTrue
+      }
     }
     AnyOf(conditions) => {
+      let mut unknown = false
       for condition in conditions {
-        if condition_matches(condition, request) {
-          return true
+        match evaluate_condition(condition, request) {
+          ConditionTrue => return ConditionTrue
+          ConditionUnknown => unknown = true
+          ConditionFalse => ()
         }
       }
-      false
+      if unknown {
+        ConditionUnknown
+      } else {
+        ConditionFalse
+      }
     }
-    Not(condition) => !condition_matches(condition, request)
+    Not(condition) =>
+      match evaluate_condition(condition, request) {
+        ConditionTrue => ConditionFalse
+        ConditionFalse => ConditionTrue
+        ConditionUnknown => ConditionUnknown
+      }
   }
 }
 
