@@ -47,6 +47,16 @@ fn run_cli(args : Array[String]) -> Int raise {
     println(report.to_json().stringify())
     return if report.decision.allowed { 0 } else { 1 }
   }
+  if args.length() == 4 && args[0] == "diff" {
+    let previous = @policy.policy_from_json(args[1])
+    let replacement = @policy.policy_from_json(args[2])
+    let requests = @policy.requests_from_json(args[3])
+    let changes = previous.access_changes(replacement, requests)
+    println(
+      Json::array([ for change in changes => change.to_json() ]).stringify(),
+    )
+    return if changes.length() == 0 { 0 } else { 1 }
+  }
   if args.length() == 1 && args[0] == "demo" {
     let policy = @policy.policy_from_json(
       "{\"roles\":{\"editor\":[\"document:read\"]},\"bindings\":[{\"subject\":\"alice\",\"role\":\"editor\"}]}",
@@ -61,6 +71,9 @@ fn run_cli(args : Array[String]) -> Int raise {
   println("usage: moon-policy check POLICY_JSON")
   println("       moon-policy eval POLICY_JSON REQUEST_JSON")
   println("       moon-policy explain POLICY_JSON REQUEST_JSON")
+  println(
+    "       moon-policy diff OLD_POLICY_JSON NEW_POLICY_JSON REQUESTS_JSON",
+  )
   println("       moon-policy demo")
   2
 }

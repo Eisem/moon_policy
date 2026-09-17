@@ -33,6 +33,11 @@ pub fn request_from_json(source : String) -> Request raise PolicyParseError {
   let root = @json.parse(source) catch {
     error => raise InvalidJson(error.to_string())
   }
+  decode_request(root)
+}
+
+///|
+fn decode_request(root : Json) -> Request raise PolicyParseError {
   let object = expect_object(root, field="request")
   let subject = expect_string(
     required_field(object, "subject"),
@@ -56,6 +61,44 @@ pub fn request_from_json(source : String) -> Request raise PolicyParseError {
     ),
     context=decode_optional_attributes(object, "context"),
   )
+}
+
+///|
+/// Decode a JSON array of requests for batch checks or policy regression tests.
+pub fn requests_from_json(
+  source : String,
+) -> Array[Request] raise PolicyParseError {
+  let root = @json.parse(source) catch {
+    error => raise InvalidJson(error.to_string())
+  }
+  let entries = expect_array(root, field="requests")
+  let requests : Array[Request] = []
+  for entry in entries {
+    requests.push(decode_request(entry))
+  }
+  requests
+}
+
+///|
+fn attribute_map_to_json(attributes : Map[String, AttributeValue]) -> Json {
+  let object : Map[String, Json] = {}
+  for key, value in attributes {
+    object[key] = attribute_value_to_json(value)
+  }
+  Json::object(object)
+}
+
+///|
+/// Serialize a request into the same format accepted by `request_from_json`.
+pub fn Request::to_json(self : Request) -> Json {
+  Json::object({
+    "subject": Json::string(self.subject),
+    "action": Json::string(self.action),
+    "resource": Json::string(self.resource),
+    "subject_attributes": attribute_map_to_json(self.subject_attributes),
+    "resource_attributes": attribute_map_to_json(self.resource_attributes),
+    "context": attribute_map_to_json(self.context),
+  })
 }
 
 ///|

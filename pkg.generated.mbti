@@ -12,6 +12,8 @@ pub fn policy_from_json(String) -> Policy raise PolicyParseError
 
 pub fn request_from_json(String) -> Request raise PolicyParseError
 
+pub fn requests_from_json(String) -> Array[Request] raise PolicyParseError
+
 // Errors
 pub(all) suberror PolicyParseError {
   InvalidJson(String)
@@ -24,6 +26,19 @@ pub(all) suberror PolicyParseError {
 } derive(Eq, @debug.Debug)
 
 // Types and methods
+pub(all) struct AccessChange {
+  request : Request
+  previous : Decision
+  current : Decision
+} derive(Eq, @debug.Debug)
+pub fn AccessChange::kind(Self) -> AccessChangeKind
+pub fn AccessChange::to_json(Self) -> Json
+
+pub(all) enum AccessChangeKind {
+  NewlyAllowed
+  NewlyDenied
+} derive(Eq, @debug.Debug)
+
 pub(all) enum AttributeValue {
   StringValue(String)
   BoolValue(Bool)
@@ -93,6 +108,7 @@ pub(all) struct Policy {
   rules : Array[Rule]
 } derive(@debug.Debug)
 pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_parents? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
+pub fn Policy::access_changes(Self, Self, Array[Request]) -> Array[AccessChange]
 pub fn Policy::authorize(Self, Request) -> Decision
 pub fn Policy::explain(Self, Request) -> EvaluationReport
 pub fn Policy::to_json(Self) -> Json
@@ -113,6 +129,7 @@ pub(all) struct Request {
   context : Map[String, AttributeValue]
 } derive(Eq, @debug.Debug)
 pub fn Request::Request(subject~ : String, action~ : String, resource~ : String, subject_attributes? : Map[String, AttributeValue], resource_attributes? : Map[String, AttributeValue], context? : Map[String, AttributeValue]) -> Self
+pub fn Request::to_json(Self) -> Json
 
 pub(all) struct RoleBinding {
   subject : String

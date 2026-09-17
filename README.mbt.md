@@ -25,12 +25,16 @@ moon run --target native cmd/main -- demo
 moon run --target native cmd/main -- check '{"rules":[]}'
 moon run --target native cmd/main -- eval '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
 moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice","action":"read","resource":"doc:1"}'
+moon run --target native cmd/main -- diff '{"rules":[]}' '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
 ```
 
 The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
 decision, and 2 for an invalid command, policy, or request. JSON is passed as
 command-line text. The `examples/` directory also contains policy and request
 fixtures for integration tests and future file-input support.
+For `diff`, exit 0 means no access decisions changed in the supplied request
+array; exit 1 means at least one request became allowed or denied. The JSON
+output contains only changed decisions, in input order.
 
 For exit-code-sensitive automation, run the built native executable directly.
 The installed June 2026 `moon run` wrapper returns 0 even when this CLI exits 1.
@@ -97,6 +101,10 @@ not evaluated; a matching deny with an unknown condition is marked applied.
 format accepted by `policy_from_json`. Validate a policy before persisting it;
 invalid role references, cycles, and malformed conditions are rejected when
 loaded again.
+`previous.access_changes(replacement, requests)` compares two policies against
+a request corpus. It reports newly allowed and newly denied requests, while
+ignoring changes that affect only trace text. `requests_from_json` accepts a
+JSON array of requests for this workflow.
 
 ## JSON policies
 
