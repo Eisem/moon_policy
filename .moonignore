@@ -1,0 +1,17 @@
+# Generated output
+/_build/
+/target/
+/.mooncakes/
+/.moonagent/
+
+# Repository and automation metadata
+/.git/
+/.github/
+/.gitignore
+/AGENTS.md
+
+# Competition submission material is kept outside the reusable package
+/PROJECT_PROPOSAL.md
+
+# Local operating-system files
+/.DS_Store
