@@ -6,6 +6,8 @@ import {
 }
 
 // Values
+pub fn authorization_results_to_json(Array[AuthorizationResult]) -> Json
+
 pub fn cases_from_json(String) -> Array[PolicyCase] raise PolicyParseError
 
 pub fn glob_matches(String, String) -> Bool
@@ -48,6 +50,12 @@ pub(all) enum AttributeValue {
   BoolValue(Bool)
   IntValue(Int)
 } derive(Eq, @debug.Debug)
+
+pub(all) struct AuthorizationResult {
+  request : Request
+  decision : Decision
+} derive(Eq, @debug.Debug)
+pub fn AuthorizationResult::to_json(Self) -> Json
 
 pub(all) enum Comparison {
   LessThan
@@ -118,6 +126,7 @@ pub(all) struct Policy {
 pub fn Policy::Policy(role_permissions? : Map[String, Array[String]], role_parents? : Map[String, Array[String]], bindings? : Array[RoleBinding], rules? : Array[Rule]) -> Self
 pub fn Policy::access_changes(Self, Self, Array[Request]) -> Array[AccessChange]
 pub fn Policy::authorize(Self, Request) -> Decision
+pub fn Policy::authorize_batch(Self, Array[Request]) -> Array[AuthorizationResult]
 pub fn Policy::coverage(Self, Array[Request]) -> PolicyCoverage
 pub fn Policy::explain(Self, Request) -> EvaluationReport
 pub fn Policy::lint(Self) -> Array[PolicyWarning]

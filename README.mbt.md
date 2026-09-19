@@ -29,6 +29,7 @@ moon run --target native cmd/main -- explain '{"rules":[]}' '{"subject":"alice",
 moon run --target native cmd/main -- diff '{"rules":[]}' '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
 moon run --target native cmd/main -- verify '{"rules":[]}' '[{"name":"deny unknown","request":{"subject":"alice","action":"read","resource":"doc:1"},"expected_allowed":false}]'
 moon run --target native cmd/main -- coverage '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
+moon run --target native cmd/main -- batch '{"rules":[]}' '[{"subject":"alice","action":"read","resource":"doc:1"}]'
 ```
 
 The CLI exits with 0 for a valid policy or allowed decision, 1 for a denied
@@ -134,6 +135,9 @@ starter policy regression suite.
 selector, condition, and applied counts. `uncovered_rule_ids()` identifies
 rules that the supplied corpus never selected; it does not prove those rules
 are unreachable in all possible requests.
+`policy.authorize_batch(requests)` evaluates a request array in input order and
+returns each original request paired with its decision. The `batch` command
+emits the same result as a JSON array for gateways and offline audit jobs.
 `policy.lint()` returns non-blocking warnings for unrestricted allow rules,
 wildcard or duplicate role permissions, duplicate parent roles, duplicate rule
 bodies, and allow conditions that cannot succeed. `lint` emits the warnings as
