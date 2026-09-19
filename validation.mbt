@@ -54,10 +54,23 @@ fn validate_condition(
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
-    Equals(path~, ..) | Compare(path~, ..) | Contains(path~, ..) =>
+    Equals(path~, ..)
+    | Compare(path~, ..)
+    | Contains(path~, ..)
+    | StringMatches(path~, ..) =>
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))
       }
+    ContainsAny(path~, values~) | ContainsAll(path~, values~) => {
+      if !valid_attribute_path(path) {
+        issues.push(policy_issue("invalid_attribute_path", location, path))
+      }
+      if values.length() == 0 {
+        issues.push(
+          policy_issue("empty_string_set", location, "string set is empty"),
+        )
+      }
+    }
     OneOf(path~, values~) => {
       if !valid_attribute_path(path) {
         issues.push(policy_issue("invalid_attribute_path", location, path))

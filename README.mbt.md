@@ -102,6 +102,10 @@ For group membership, provide a string-list attribute such as
 `{ "contains": { "path": "subject.groups", "value": "reviewers" } }`.
 Missing or non-list attributes remain unknown under `contains` and cannot
 become an allow through `not`.
+Use `string_matches` with an exact string or `{ "glob": "*@example.com" }` to
+match string attributes. Use `contains_any` when one required tag is enough,
+and `contains_all` when every listed group, approval, or capability is needed.
+Empty required sets are rejected during policy validation.
 
 For an allowlist of regions or teams, use
 `{ "one_of": { "path": "context.region", "values": ["eu", "apac"] } }`.

@@ -41,6 +41,9 @@ pub(all) enum Condition {
   Same(left~ : String, right~ : String)
   OneOf(path~ : String, values~ : Array[AttributeValue])
   Contains(path~ : String, value~ : String)
+  StringMatches(path~ : String, matcher~ : Matcher)
+  ContainsAny(path~ : String, values~ : Array[String])
+  ContainsAll(path~ : String, values~ : Array[String])
   Compare(path~ : String, op~ : Comparison, value~ : Int)
   AllOf(Array[Condition])
   AnyOf(Array[Condition])
@@ -335,6 +338,52 @@ fn evaluate_condition(
           } else {
             ConditionFalse
           }
+        }
+        Some(_) => ConditionUnknown
+      }
+    StringMatches(path~, matcher~) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(StringValue(value)) =>
+          if matcher_matches(matcher, value) {
+            ConditionTrue
+          } else {
+            ConditionFalse
+          }
+        Some(_) => ConditionUnknown
+      }
+    ContainsAny(path~, values=expected) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(StringListValue(actual)) => {
+          for candidate in expected {
+            for value in actual {
+              if value == candidate {
+                return ConditionTrue
+              }
+            }
+          }
+          ConditionFalse
+        }
+        Some(_) => ConditionUnknown
+      }
+    ContainsAll(path~, values=expected) =>
+      match resolve_attribute(request, path) {
+        None => ConditionUnknown
+        Some(StringListValue(actual)) => {
+          for candidate in expected {
+            let mut found = false
+            for value in actual {
+              if value == candidate {
+                found = true
+                break
+              }
+            }
+            if !found {
+              return ConditionFalse
+            }
+          }
+          ConditionTrue
         }
         Some(_) => ConditionUnknown
       }

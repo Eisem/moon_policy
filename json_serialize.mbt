@@ -72,6 +72,27 @@ fn condition_to_json(condition : Condition) -> Json {
           "value": Json::string(value),
         }),
       })
+    StringMatches(path~, matcher~) =>
+      Json::object({
+        "string_matches": Json::object({
+          "path": Json::string(path),
+          "matcher": matcher_to_json(matcher),
+        }),
+      })
+    ContainsAny(path~, values~) =>
+      Json::object({
+        "contains_any": Json::object({
+          "path": Json::string(path),
+          "values": Json::array([ for value in values => Json::string(value) ]),
+        }),
+      })
+    ContainsAll(path~, values~) =>
+      Json::object({
+        "contains_all": Json::object({
+          "path": Json::string(path),
+          "values": Json::array([ for value in values => Json::string(value) ]),
+        }),
+      })
     Compare(path~, op~, value~) =>
       Json::object({
         "compare": Json::object({

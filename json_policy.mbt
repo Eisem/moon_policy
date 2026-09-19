@@ -295,6 +295,83 @@ fn decode_contains(value : Json) -> Condition raise PolicyParseError {
 }
 
 ///|
+fn decode_string_values(
+  value : Json,
+  field : String,
+) -> Array[String] raise PolicyParseError {
+  let source = expect_array(value, field~)
+  let values : Array[String] = []
+  for item in source {
+    values.push(expect_string(item, field=field + "[]"))
+  }
+  values
+}
+
+///|
+fn decode_matcher_value(
+  value : Json,
+  field : String,
+) -> Matcher raise PolicyParseError {
+  match value {
+    String(exact) => Exact(exact)
+    Object(spec) => {
+      if spec.length() != 1 {
+        raise ExpectedType(field~, expected="string or one-key glob object")
+      }
+      match spec.get("glob") {
+        Some(pattern) => Glob(expect_string(pattern, field=field + ".glob"))
+        None =>
+          raise ExpectedType(field~, expected="string or one-key glob object")
+      }
+    }
+    _ => raise ExpectedType(field~, expected="string or one-key glob object")
+  }
+}
+
+///|
+fn decode_string_match(value : Json) -> Condition raise PolicyParseError {
+  let object = expect_object(value, field="rules[].condition.string_matches")
+  if object.length() != 2 {
+    raise InvalidCondition("string_matches requires only path and matcher")
+  }
+  StringMatches(
+    path=expect_string(
+      required_field(object, "path"),
+      field="rules[].condition.string_matches.path",
+    ),
+    matcher=decode_matcher_value(
+      required_field(object, "matcher"),
+      "rules[].condition.string_matches.matcher",
+    ),
+  )
+}
+
+///|
+fn decode_list_membership(
+  value : Json,
+  operator : String,
+) -> Condition raise PolicyParseError {
+  let field = "rules[].condition." + operator
+  let object = expect_object(value, field~)
+  if object.length() != 2 {
+    raise InvalidCondition(operator + " requires only path and values")
+  }
+  let path = expect_string(
+    required_field(object, "path"),
+    field=field + ".path",
+  )
+  let values = decode_string_values(
+    required_field(object, "values"),
+    field + ".values",
+  )
+  if operator == "contains_any" {
+    ContainsAny(path~, values~)
+  } else {
+    ContainsAll(path~, values~)
+  }
+}
+
+///|
 fn decode_condition(value : Json) -> Condition raise PolicyParseError {
   let object = expect_object(value, field="rules[].condition")
   if object.length() != 1 {
@@ -336,6 +413,18 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
     Some(contains) => return decode_contains(contains)
     None => ()
   }
+  match object.get("string_matches") {
+    Some(spec) => return decode_string_match(spec)
+    None => ()
+  }
+  match object.get("contains_any") {
+    Some(spec) => return decode_list_membership(spec, "contains_any")
+    None => ()
+  }
+  match object.get("contains_all") {
+    Some(spec) => return decode_list_membership(spec, "contains_all")
+    None => ()
+  }
   match object.get("compare") {
     Some(compare) => return decode_compare(compare)
     None => ()
@@ -355,7 +444,7 @@ fn decode_condition(value : Json) -> Condition raise PolicyParseError {
     None => ()
   }
   raise InvalidCondition(
-    "expected exists, equals, same, one_of, contains, compare, all, any, or not",
+    "expected exists, equals, same, one_of, contains, string_matches, contains_any, contains_all, compare, all, any, or not",
   )
 }
 
@@ -380,34 +469,7 @@ fn decode_optional_matcher(
 ) -> Matcher raise PolicyParseError {
   match object.get(field) {
     None => Any
-    Some(value) =>
-      match value {
-        String(exact) => Exact(exact)
-        Object(spec) => {
-          if spec.length() != 1 {
-            raise ExpectedType(
-              field=location + "." + field,
-              expected="string or one-key glob object",
-            )
-          }
-          match spec.get("glob") {
-            Some(pattern) =>
-              Glob(
-                expect_string(pattern, field=location + "." + field + ".glob"),
-              )
-            None =>
-              raise ExpectedType(
-                field=location + "." + field,
-                expected="string or one-key glob object",
-              )
-          }
-        }
-        _ =>
-          raise ExpectedType(
-            field=location + "." + field,
-            expected="string or one-key glob object",
-          )
-      }
+    Some(value) => decode_matcher_value(value, location + "." + field)
   }
 }
 
