@@ -18,9 +18,16 @@ fn policy_issue(
 ///|
 fn valid_attribute_path(path : String) -> Bool {
   let parts = path.split(".").to_array()
-  parts.length() == 2 &&
-  parts[1] != "" &&
-  (parts[0] == "subject" || parts[0] == "resource" || parts[0] == "context")
+  if parts.length() < 2 ||
+    !(parts[0] == "subject" || parts[0] == "resource" || parts[0] == "context") {
+    return false
+  }
+  for part in parts {
+    if part == "" {
+      return false
+    }
+  }
+  true
 }
 
 ///|
@@ -28,6 +35,7 @@ fn same_attribute_type(left : AttributeValue, right : AttributeValue) -> Bool {
   match (left, right) {
     (StringValue(_), StringValue(_))
     | (StringListValue(_), StringListValue(_))
+    | (ObjectValue(_), ObjectValue(_))
     | (BoolValue(_), BoolValue(_))
     | (IntValue(_), IntValue(_)) => true
     _ => false

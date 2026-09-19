@@ -18,6 +18,7 @@ pub(all) enum Matcher {
 pub(all) enum AttributeValue {
   StringValue(String)
   StringListValue(Array[String])
+  ObjectValue(Map[String, AttributeValue])
   BoolValue(Bool)
   IntValue(Int)
 } derive(Debug, Eq)
@@ -220,10 +221,15 @@ priv enum ConditionResult {
 ///|
 fn resolve_attribute(request : Request, path : String) -> AttributeValue? {
   let parts = path.split(".").to_array()
-  if parts.length() != 2 {
+  if parts.length() < 2 {
     return None
   }
-  match (parts[0], parts[1]) {
+  for part in parts {
+    if part == "" {
+      return None
+    }
+  }
+  let mut current : AttributeValue? = match (parts[0], parts[1]) {
     ("subject", "id") => Some(StringValue(request.subject))
     ("resource", "id") => Some(StringValue(request.resource))
     ("subject", key) => request.subject_attributes.get(key.to_owned())
@@ -231,6 +237,13 @@ fn resolve_attribute(request : Request, path : String) -> AttributeValue? {
     ("context", key) => request.context.get(key.to_owned())
     _ => None
   }
+  for index in 2..<parts.length() {
+    match current {
+      Some(ObjectValue(fields)) => current = fields.get(parts[index].to_owned())
+      _ => return None
+    }
+  }
+  current
 }
 
 ///|
@@ -256,6 +269,7 @@ fn evaluate_condition(
             match (actual, value) {
               (StringValue(_), StringValue(_))
               | (StringListValue(_), StringListValue(_))
+              | (ObjectValue(_), ObjectValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => ConditionFalse
               _ => ConditionUnknown
@@ -272,6 +286,7 @@ fn evaluate_condition(
             match (left_value, right_value) {
               (StringValue(_), StringValue(_))
               | (StringListValue(_), StringListValue(_))
+              | (ObjectValue(_), ObjectValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => ConditionFalse
               _ => ConditionUnknown
@@ -291,6 +306,7 @@ fn evaluate_condition(
             match (actual, value) {
               (StringValue(_), StringValue(_))
               | (StringListValue(_), StringListValue(_))
+              | (ObjectValue(_), ObjectValue(_))
               | (BoolValue(_), BoolValue(_))
               | (IntValue(_), IntValue(_)) => same_type = true
               _ => ()

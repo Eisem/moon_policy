@@ -84,6 +84,9 @@ Rules may also require attributes under `subject.<key>`,
 Negating a missing attribute remains unknown rather than becoming true.
 An unknown condition never grants access; on a matching deny rule it denies
 conservatively.
+Attribute objects may be nested, so paths such as
+`resource.metadata.owner.id` and `context.risk.score` work without flattening
+the request. JSON attribute nesting is limited to 16 levels.
 
 The JSON format expresses conditions as `exists`, `equals`, `same`, `one_of`,
 `contains`, `compare`, `all`, `any`, and `not` objects. A resource-owner rule can use

@@ -44,6 +44,7 @@ pub(all) enum AccessChangeKind {
 pub(all) enum AttributeValue {
   StringValue(String)
   StringListValue(Array[String])
+  ObjectValue(Map[String, AttributeValue])
   BoolValue(Bool)
   IntValue(Int)
 } derive(Eq, @debug.Debug)

@@ -49,7 +49,7 @@ test "JSON request rejects unsupported attribute types" {
     #|  "subject": "alice",
     #|  "action": "document:read",
     #|  "resource": "document:42",
-    #|  "context": { "roles": { "admin": true } }
+    #|  "context": { "roles": null }
     #|}
   try ignore(@moon_policy.request_from_json(source)) catch {
     ExpectedType(field="context.roles", ..) => ()

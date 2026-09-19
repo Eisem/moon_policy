@@ -4,6 +4,13 @@ fn attribute_value_to_json(value : AttributeValue) -> Json {
     StringValue(text) => Json::string(text)
     StringListValue(values) =>
       Json::array([ for value in values => Json::string(value) ])
+    ObjectValue(fields) => {
+      let object : Map[String, Json] = {}
+      for name, item in fields {
+        object[name] = attribute_value_to_json(item)
+      }
+      Json::object(object)
+    }
     BoolValue(flag) => Json::boolean(flag)
     IntValue(number) => Json::number(Double::from_int(number))
   }

@@ -138,8 +138,34 @@ fn decode_attribute_value(
   value : Json,
   field~ : String,
 ) -> AttributeValue raise PolicyParseError {
+  decode_attribute_value_at_depth(value, field, 0)
+}
+
+///|
+fn decode_attribute_value_at_depth(
+  value : Json,
+  field : String,
+  depth : Int,
+) -> AttributeValue raise PolicyParseError {
+  if depth > 16 {
+    raise InvalidPolicy("attribute nesting exceeds 16 levels at " + field)
+  }
   match value {
     String(string) => StringValue(string)
+    Object(fields) => {
+      let values : Map[String, AttributeValue] = {}
+      for name, item in fields {
+        if name == "" {
+          raise InvalidPolicy(field + " contains an empty attribute name")
+        }
+        values[name] = decode_attribute_value_at_depth(
+          item,
+          field + "." + name,
+          depth + 1,
+        )
+      }
+      ObjectValue(values)
+    }
     Array(items) => {
       let values : Array[String] = []
       for item in items {
@@ -156,14 +182,14 @@ fn decode_attribute_value(
       } else {
         raise ExpectedType(
           field~,
-          expected="string, string array, boolean, or integer",
+          expected="string, string array, object, boolean, or integer",
         )
       }
     }
     _ =>
       raise ExpectedType(
         field~,
-        expected="string, string array, boolean, or integer",
+        expected="string, string array, object, boolean, or integer",
       )
   }
 }
