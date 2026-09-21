@@ -35,7 +35,7 @@ pub fn Policy::access_changes(
     let previous = self.authorize(request)
     let current = replacement.authorize(request)
     if previous.allowed != current.allowed {
-      changes.push({ request, previous, current })
+      changes.push({ request, previous, current, })
     }
   }
   changes
