@@ -12,7 +12,7 @@ fn policy_issue(
   location : String,
   message : String,
 ) -> PolicyIssue {
-  { code, location, message }
+  { code, location, message, }
 }
 
 ///|
