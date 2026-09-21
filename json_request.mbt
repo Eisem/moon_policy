@@ -4,7 +4,7 @@ fn decode_attribute_map(
   field~ : String,
 ) -> Map[String, AttributeValue] raise PolicyParseError {
   let object = expect_object(value, field~)
-  let attributes : Map[String, AttributeValue] = {}
+  let attributes : Map[String, AttributeValue] = Map([])
   for name, item in object {
     if name == "" {
       raise InvalidPolicy(field + " contains an empty attribute name")
@@ -81,7 +81,7 @@ pub fn requests_from_json(
 
 ///|
 fn attribute_map_to_json(attributes : Map[String, AttributeValue]) -> Json {
-  let object : Map[String, Json] = {}
+  let object : Map[String, Json] = Map([])
   for key, value in attributes {
     object[key] = attribute_value_to_json(value)
   }
