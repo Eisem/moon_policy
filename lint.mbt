@@ -58,7 +58,7 @@ fn condition_never_satisfied(condition : Condition) -> Bool {
 pub fn Policy::lint(self : Policy) -> Array[PolicyWarning] {
   let warnings : Array[PolicyWarning] = []
   for role, permissions in self.role_permissions {
-    let seen : Map[String, Bool] = {}
+    let seen : Map[String, Bool] = Map([])
     for index, permission in permissions {
       let location = "roles." + role + "." + index.to_string()
       if permission == "*" {
@@ -77,7 +77,7 @@ pub fn Policy::lint(self : Policy) -> Array[PolicyWarning] {
     }
   }
   for role, parents in self.role_parents {
-    let seen : Map[String, Bool] = {}
+    let seen : Map[String, Bool] = Map([])
     for index, parent in parents {
       let location = "role_parents." + role + "." + index.to_string()
       if seen.contains(parent) {
