@@ -451,7 +451,7 @@ fn role_grants(
   trace : Array[String],
 ) -> Bool {
   let mut granted = false
-  let visited : Map[String, Bool] = {}
+  let visited : Map[String, Bool] = Map([])
   for binding in policy.bindings {
     if binding.subject == request.subject &&
       matcher_matches(binding.resource, request.resource) {
