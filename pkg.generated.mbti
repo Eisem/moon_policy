@@ -229,4 +229,3 @@ pub(all) struct RuleEvaluation {
 // Type aliases
 
 // Traits
-
