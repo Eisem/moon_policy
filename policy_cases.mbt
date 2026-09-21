@@ -12,7 +12,7 @@ pub fn PolicyCase::PolicyCase(
   request~ : Request,
   expected_allowed~ : Bool,
 ) -> PolicyCase {
-  { name, request, expected_allowed }
+  { name, request, expected_allowed, }
 }
 
 ///|
@@ -59,7 +59,7 @@ pub fn Policy::run_cases(
       passed: success,
     })
   }
-  { results, passed, failed }
+  { results, passed, failed, }
 }
 
 ///|
