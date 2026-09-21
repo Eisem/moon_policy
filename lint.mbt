@@ -13,7 +13,7 @@ fn policy_warning(
   location : String,
   message : String,
 ) -> PolicyWarning {
-  { code, location, message }
+  { code, location, message, }
 }
 
 ///|
