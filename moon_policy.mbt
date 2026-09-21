@@ -71,7 +71,7 @@ pub fn Rule::Rule(
   resource? : Matcher = Any,
   condition? : Condition = Always,
 ) -> Rule {
-  { id, effect, subject, action, resource, condition }
+  { id, effect, subject, action, resource, condition, }
 }
 
 ///|
@@ -89,7 +89,7 @@ pub fn RoleBinding::RoleBinding(
   role~ : String,
   resource? : Matcher = Any,
 ) -> RoleBinding {
-  { subject, role, resource }
+  { subject, role, resource, }
 }
 
 ///|
@@ -156,7 +156,7 @@ pub fn Policy::Policy(
   bindings? : Array[RoleBinding] = [],
   rules? : Array[Rule] = [],
 ) -> Policy {
-  { role_permissions, role_parents, bindings, rules }
+  { role_permissions, role_parents, bindings, rules, }
 }
 
 ///|
@@ -523,10 +523,10 @@ pub fn Policy::authorize(self : Policy, request : Request) -> Decision {
     }
   }
   if denied {
-    { allowed: false, reason: ExplicitDeny, trace }
+    { allowed: false, reason: ExplicitDeny, trace, }
   } else if allowed {
-    { allowed: true, reason: Allowed, trace }
+    { allowed: true, reason: Allowed, trace, }
   } else {
-    { allowed: false, reason: NoMatchingRule, trace }
+    { allowed: false, reason: NoMatchingRule, trace, }
   }
 }
