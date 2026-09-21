@@ -5,7 +5,7 @@ fn attribute_value_to_json(value : AttributeValue) -> Json {
     StringListValue(values) =>
       Json::array([ for value in values => Json::string(value) ])
     ObjectValue(fields) => {
-      let object : Map[String, Json] = {}
+      let object : Map[String, Json] = Map([])
       for name, item in fields {
         object[name] = attribute_value_to_json(item)
       }
@@ -163,7 +163,7 @@ fn RoleBinding::to_json(self : RoleBinding) -> Json {
 /// Serialize a policy to the documented JSON representation. A valid policy
 /// can be loaded again with `policy_from_json` without changing its behavior.
 pub fn Policy::to_json(self : Policy) -> Json {
-  let roles : Map[String, Json] = {}
+  let roles : Map[String, Json] = Map([])
   for role, permissions in self.role_permissions {
     roles[role] = Json::array(
       [
@@ -171,7 +171,7 @@ pub fn Policy::to_json(self : Policy) -> Json {
       ],
     )
   }
-  let parents : Map[String, Json] = {}
+  let parents : Map[String, Json] = Map([])
   for role, inherited in self.role_parents {
     parents[role] = Json::array(
       [
