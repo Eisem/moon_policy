@@ -104,7 +104,7 @@ pub fn cases_from_json(
   }
   let entries = expect_array(root, field="cases")
   let cases : Array[PolicyCase] = []
-  let names : Map[String, Bool] = {}
+  let names : Map[String, Bool] = Map([])
   for entry in entries {
     let object = expect_object(entry, field="cases[]")
     reject_unknown_fields(
