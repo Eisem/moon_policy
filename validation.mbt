@@ -182,7 +182,7 @@ pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
       }
     }
   }
-  let role_states : Map[String, Int] = {}
+  let role_states : Map[String, Int] = Map([])
   for role, _ in self.role_permissions {
     if role_has_cycle(self, role, role_states) {
       issues.push(policy_issue("role_inheritance_cycle", "role_parents", role))
@@ -212,7 +212,7 @@ pub fn Policy::validate(self : Policy) -> Array[PolicyIssue] {
     }
     bindings_seen.push(binding)
   }
-  let rule_ids_seen : Map[String, Bool] = {}
+  let rule_ids_seen : Map[String, Bool] = Map([])
   for index, rule in self.rules {
     let location = "rules." + index.to_string()
     if rule.id == "" {
