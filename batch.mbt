@@ -13,7 +13,7 @@ pub fn Policy::authorize_batch(
   requests : Array[Request],
 ) -> Array[AuthorizationResult] {
   [
-    for request in requests => { request, decision: self.authorize(request) }
+    for request in requests => { request, decision: self.authorize(request), }
   ]
 }
 
