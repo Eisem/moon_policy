@@ -106,5 +106,5 @@ pub fn Policy::explain(self : Policy, request : Request) -> EvaluationReport {
   for rule in self.rules {
     rules.push(inspect_rule(rule, request))
   }
-  { decision: self.authorize(request), rules }
+  { decision: self.authorize(request), rules, }
 }
