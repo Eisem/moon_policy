@@ -153,7 +153,7 @@ fn decode_attribute_value_at_depth(
   match value {
     String(string) => StringValue(string)
     Object(fields) => {
-      let values : Map[String, AttributeValue] = {}
+      let values : Map[String, AttributeValue] = Map([])
       for name, item in fields {
         if name == "" {
           raise InvalidPolicy(field + " contains an empty attribute name")
